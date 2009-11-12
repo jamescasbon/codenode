@@ -1,3 +1,6 @@
+import os 
+import virtualenv
+# import settings
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -26,6 +29,26 @@ class EngineType(models.Model):
 
     def __unicode__(self):
         return u"%s Engine Type " % (self.name,)
+        
+class VirtualenvEngine(models.Model):
+    """A managed python engine in a virtualenv.
+    """
+    name = models.CharField(max_length=100, primary_key=True)
+    python_path = models.CharField(max_length=255, editable=False)    
+    
+    def __unicode__(self):
+        return u"Virtualenv Engine %s" % (self.name,)
+        
+    def save(self, *args, **kwargs):
+        """Intercept save to create the virtalenv and set the python_path.
+        Could be done with a signal, or django admin action?
+        """
+        self._create_ve()
+        super(VirtualenvEngine, self).save(*args, **kwargs)
+    
+    def create_ve(self):
+        pass
+        
 
 class NotebookBackendRecord(models.Model):
     """
