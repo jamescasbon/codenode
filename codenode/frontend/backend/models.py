@@ -1,6 +1,6 @@
 import os 
-import virtualenv
-# import settings
+import subprocess
+import tempfile 
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -46,8 +46,14 @@ class VirtualenvEngine(models.Model):
         self._create_ve()
         super(VirtualenvEngine, self).save(*args, **kwargs)
     
-    def create_ve(self):
-        pass
+    def _create_ve(self):
+        
+        target = '/tmp/%s' % self.name
+        subprocess.check_call(
+            ['/opt/local/Library/Frameworks/Python.framework/Versions/2.5/bin/python', 
+            '/opt/local/bin/virtualenv', 
+            target]
+        )
         
 
 class NotebookBackendRecord(models.Model):
