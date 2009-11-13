@@ -14,10 +14,6 @@ class TestBackendModels(TestCase):
     def setUp(self):
         if os.path.exists('/tmp/unit_test'):
             shutil.rmtree('/tmp/unit_test')
-        
-    def tearDown(self):
-        if os.path.exists('/tmp/unit_test'):
-            shutil.rmtree('/tmp/unit_test')
     
     def test_create_VirtualenvEngine(self):
         
@@ -36,7 +32,10 @@ class TestBackendModels(TestCase):
         ve.create()
         assert ve.installed()
         
-        # get is as engine configuration
+        # try get is as engine configuration
         assert ve.as_engine_configuration()
+        
+        # if it was created correctly we should be able to import codenode to create the engine
+        subprocess.check_call([ve.executable ,'-c', "import codenode"])
         
         

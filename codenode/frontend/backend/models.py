@@ -1,6 +1,5 @@
 import os 
 import subprocess
-import tempfile 
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -77,7 +76,7 @@ class VirtualenvEngine(models.Model):
     virtualenv_incantation = "import sys,pkg_resources; sys.exit( \
         pkg_resources.load_entry_point('virtualenv', 'console_scripts', 'virtualenv')())"
         
-    codenode_code = os.path.abspath(os.path.join(os.path.basename(__file__), '..','..','..'))
+    codenode_code = os.path.abspath(os.path.join(os.path.dirname(__file__), '..','..'))
     
     def __unicode__(self):
         return u"Virtualenv Engine %s" % (self.name,)
@@ -95,7 +94,7 @@ class VirtualenvEngine(models.Model):
             stderr=subprocess.PIPE
         )
 
-        # Link in the codenode code.       
+        # Link in the codenode code.
         os.symlink(self.codenode_code, os.path.join(self.site_packages, 'codenode'))
         
     def as_engine_configuration(self):
