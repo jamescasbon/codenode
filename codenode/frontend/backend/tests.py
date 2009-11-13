@@ -7,6 +7,13 @@ from django.test import TestCase
 import models as m
 
 class TestBackendModels(TestCase):
+    
+    # mark the test as slow so you can exclude it with ./test.sh -a \!slow
+    slow = True
+    
+    def setUp(self):
+        if os.path.exists('/tmp/unit_test'):
+            shutil.rmtree('/tmp/unit_test')
         
     def tearDown(self):
         if os.path.exists('/tmp/unit_test'):
@@ -24,8 +31,12 @@ class TestBackendModels(TestCase):
         ve = m.VirtualenvEngine(python=py, name='unit_test')
         ve.save()
         
+        # try creating it 
         assert not ve.installed()
         ve.create()
         assert ve.installed()
+        
+        # get is as engine configuration
+        assert ve.as_engine_configuration()
         
         
