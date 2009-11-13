@@ -41,8 +41,8 @@ class EngineConfigurationBase(object):
     env = {} #Dictionary of environment variables
     path = '' #Directory to run process in
 
-    def __init__(self):
-        self.name = self.__class__.__name__
+    def __init__(self, name=None):
+        self.name = name or self.__class__.__name__
 
     def __repr__(self):
         """Name is used as the unique identifier.

@@ -46,5 +46,8 @@ admin.site.register(Python, PythonAdmin)
 class VirtualenvEngineAdmin(admin.ModelAdmin):
     """
     """
-
+    def save_model(self, request, obj, form, change):
+        obj.save()
+        obj.create()
+    
 admin.site.register(VirtualenvEngine, VirtualenvEngineAdmin)
