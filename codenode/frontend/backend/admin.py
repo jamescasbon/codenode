@@ -3,6 +3,8 @@ from django.contrib import admin
 from codenode.frontend.backend.models import BackendServer
 from codenode.frontend.backend.models import EngineType
 from codenode.frontend.backend.models import NotebookBackendRecord
+from codenode.frontend.backend.models import Python
+from codenode.frontend.backend.models import VirtualenvEngine
 
 from codenode.frontend.backend import rpc
 
@@ -32,3 +34,17 @@ class NotebookBackendRecordAdmin(admin.ModelAdmin):
     """
 
 admin.site.register(NotebookBackendRecord, NotebookBackendRecordAdmin)
+
+
+class PythonAdmin(admin.ModelAdmin):
+    """
+    """
+
+admin.site.register(Python, PythonAdmin)
+
+
+class VirtualenvEngineAdmin(admin.ModelAdmin):
+    """
+    """
+
+admin.site.register(VirtualenvEngine, VirtualenvEngineAdmin)
