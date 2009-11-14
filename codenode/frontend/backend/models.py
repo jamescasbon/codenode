@@ -44,9 +44,13 @@ class EngineType(models.Model):
         return u"%s Engine Type " % (self.name,)
         
 class Python(models.Model):
-    """A python installation. Must have virtualenv installed. """
+    """A python installation. Must have virtualenv and pip installed. """
     executable = models.CharField(max_length=255)
     version = models.CharField(max_length=10)
+    
+    # TODO: offer a check method for virtualenv and pip
+    def __unicode__(self):
+        return u"Notebook Engine Type: %s" % (self.engine_type,)
         
 class VirtualenvEngine(models.Model):
     """A managed python engine in a virtualenv.
@@ -56,6 +60,7 @@ class VirtualenvEngine(models.Model):
     """
     python = models.ForeignKey(Python)
     name = models.CharField(max_length=100, primary_key=True)
+    freeze = models.TextField(blank=True)
     
     @property
     def directory(self):
@@ -64,10 +69,14 @@ class VirtualenvEngine(models.Model):
     @property 
     def executable(self):
         return os.path.join(self.directory, 'bin', 'python')
-        
+    
+    @property 
+    def pip(self):
+        return os.path.join(self.directory, 'bin', 'pip')    
+    
     @property
     def site_packages(self):
-        # must be a better way from using site to return the correct directory 
+        # must be a better way from using site module to return the correct directory 
         return os.path.join(self.directory, 'lib', 'python' + self.python.version[:3], 'site-packages')
     
     def installed(self):
@@ -96,7 +105,20 @@ class VirtualenvEngine(models.Model):
 
         # Link in the codenode code.
         os.symlink(self.codenode_code, os.path.join(self.site_packages, 'codenode'))
+    
+    def configure(self):
+        """ configure the virtualenv by installing the required packages """
+        package_list  = self.freeze.split()
         
+        # TODO - this should return its output so that the user can see what happens when something
+        # goes wrong
+        subprocess.check_call(
+            [self.pip, 'install'] + package_list,
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE
+        )
+        
+    
     def as_engine_configuration(self):
         """ return an engine configuration """
         engine = EngineConfigurationBase(self.name)
