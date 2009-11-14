@@ -82,6 +82,22 @@ class VirtualenvEngine(models.Model):
     def installed(self):
         return os.path.exists(self.directory) and os.path.exists(self.executable)
     
+    def is_package_installed(self, package):
+        try:
+            subprocess.check_call([self.executable ,'-c', "import %s" % package], 
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return True
+        except subprocess.CalledProcessError:
+            return False
+    
+    def is_up_to_date(self):
+        """Check that the installed packages match the freeze """
+        # TODO: actually check the version number
+        for package in self.freeze.split():
+            if not self.is_package_installed(package):
+                return False
+        return True
+    
     virtualenv_incantation = "import sys,pkg_resources; sys.exit( \
         pkg_resources.load_entry_point('virtualenv', 'console_scripts', 'virtualenv')())"
         

@@ -49,8 +49,12 @@ class TestBackendModels(TestCase):
         # if it was created correctly we should be able to import codenode to create the engine
         self._check_installed(ve.executable, 'codenode')
         
+        # at this point it is not up to date since dummy is not installed
+        assert not ve.is_package_installed('dummy')
+        assert not ve.is_up_to_date()
+        
         # now run the configure and test the imports
         ve.configure()
-        self._check_installed(ve.executable, 'dummy')
+        assert ve.is_package_installed('dummy')
 
         
