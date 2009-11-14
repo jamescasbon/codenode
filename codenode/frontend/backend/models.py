@@ -50,7 +50,7 @@ class Python(models.Model):
     
     # TODO: offer a check method for virtualenv and pip
     def __unicode__(self):
-        return u"Notebook Engine Type: %s" % (self.engine_type,)
+        return u"Python version %s (%s)" % (self.version, self.executable)
         
 class VirtualenvEngine(models.Model):
     """A managed python engine in a virtualenv.
