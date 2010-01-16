@@ -222,16 +222,8 @@ class FrontendServiceMaker(object):
 
         web_app_service = service.MultiService()
 
-        if options['devel_mode']:
-            staticfiles = os.path.join(lib_path, 'frontend', 'static')
-        else:
-            staticfiles = options['static_files']
-        
-        datafiles = options['env_path'] + "/data/plot_images" #XXX
-        #Temporary hack
-        if not os.path.exists(datafiles):
-            os.mkdir(datafiles)
-        web_resource = webResourceFactory(staticfiles, datafiles)
+
+        web_resource = webResourceFactory(settings.MEDIA_ROOT, settings.HOME_PATH)
         serverlog = options['server_log']
         web_resource_factory = server.Site(web_resource, logPath=serverlog)
 

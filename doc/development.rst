@@ -46,26 +46,25 @@ Overview
 Server scripts
 --------------
 
-``frontend-devel`` runs the frontend server of codenode. This uses library code
+``codenode-admin frontend -devel`` runs the frontend server of codenode. This uses library code
 from codenode.service, codenode.frontend and relies on the
-env/twisted/plugins/frontend_plugin.py file.
+twisted/plugins/frontend_plugin.py file.
 
-``backend-devel`` runs the backend server of codenode. This server uses
+``codenode-admin backend -devel`` runs the backend server of codenode. This server uses
 codenode.backend and codenode.engine and relies on the
-env/twisted/pliguins/backend_plugin.py file.
+twisted/pliguins/backend_plugin.py file.
 
 
 Devel environment and database
 ------------------------------
 
-``make-devel-env`` creates a dir called env in the codenode/devel dir. *env* is
-called a codenode *environment* and is the development version of::
+The ``-devel`` switch to codenode-admin activates the development environment and if necessary
+creates a dir called env in the codenode/devel dir. *env* is called a codenode *environment* and is the development version of::
 
     $ codenode-admin init -name env
 
 
-``frontend-newdb`` can be used to reset the frontend database created by
-make-devel-env without recreating all of the env environment.
+``codenode-admin resetdb -devel`` can be used to reset the frontend database without recreating all of the env environment.
 
 
 Devel mode example
@@ -73,14 +72,11 @@ Devel mode example
 
 Open up a terminal and type::
 
-    $ cd $CODENODE_ROOT/devel
-    $ ./make-devel-env
-    $ ./frontend-devel
+    $ codenode-admin frontend -devel
 
 Open a second terminal and type::
 
-    $ cd $CODENODE_ROOT/devel
-    $ ./backend-devel
+    $ codenode-admin backend -devel
 
 Now go to http://localhost:8000/admin, log in with the username and
 password that you entered from ``./make-devel-env``, and go to
@@ -99,6 +95,8 @@ By invoking appropriate methods found in twisted.python.rebuild, you can
 dynamically rebuild modules and classes without restarting the server! More
 elaborate and convenient use cases can, and hopefully will, grow out of
 this raw capability.
+
+You can enter a manhole with ``codenode-admin frontendmanhole`` or ``codenode-admin backendmanhole``
 
 
 
