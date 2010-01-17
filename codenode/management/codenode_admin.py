@@ -207,7 +207,7 @@ def dbshell_command():
 @setup_django
 def shell_command():
     """
-    Python shell
+    Open a python shell.
     """
     try:
         call_command('shell_plus')
@@ -217,7 +217,7 @@ def shell_command():
 @setup_django
 def resetdb_command():
     """
-    Database shell
+    Open a database shell.
     """
     call_command('reset_db')
     call_command('syncdb', interactive=False)
@@ -226,11 +226,17 @@ def resetdb_command():
         
 
 def backendmanhole_command():
+    """
+    Open a manhole to the backend.
+    """
     # TODO: pick up port from configuration
     os.system('telnet localhost 6024')
 
 
 def frontendmanhole_command():
+    """ 
+    Open a manhole to the frontend.
+    """
     # TODO: pick up port from configuration
     os.system('telnet localhost 6023')
     
