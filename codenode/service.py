@@ -178,7 +178,7 @@ class DesktopServiceMaker(object):
 
         
         web_resource_factory = server.Site(
-            webResourceFactory(settings.MEDIA_ROOT, settings.HOME_PATH),
+            webResourceFactory(settings.MEDIA_ROOT, settings.PLOT_IMAGES),
             logPath=options['server_log']
         )
 
@@ -223,7 +223,7 @@ class FrontendServiceMaker(object):
         web_app_service = service.MultiService()
 
 
-        web_resource = webResourceFactory(settings.MEDIA_ROOT, settings.HOME_PATH)
+        web_resource = webResourceFactory(settings.MEDIA_ROOT, settings.PLOT_IMAGES)
         serverlog = options['server_log']
         web_resource_factory = server.Site(web_resource, logPath=serverlog)
 
