@@ -18,6 +18,10 @@ from django.core.management.base import CommandError
 import codenode
 from codenode import management
 
+CODE_PATH = os.path.abspath(os.path.dirname(codenode.__file__))
+DESKTOP_ENV = os.path.join(os.path.expanduser("~"), '.codenode')
+DEVEL_ENV = os.path.abspath(os.path.join(CODE_PATH, '..', 'devel', 'env'))
+
 
 def setup_django(command):
     """ This decorator wraps an admin command to provide django setup.
@@ -31,23 +35,32 @@ def setup_django(command):
     def wrapper(devel=False, desktop=False, settings=False, *args, **kwargs):
         
         if 'DJANGO_SETTINGS_MODULE' not in os.environ:
+            os.environ['DJANGO_SETTINGS_MODULE'] = 'frontend.settings'
+            
+            envroot = os.getcwd()
+            
             if devel: 
-                os.environ['DJANGO_SETTINGS_MODULE'] = 'codenode.frontend._devel_settings'
-                check_home_dir()
+                envroot = DEVEL_ENV
                 
             elif desktop:
-                os.environ['DJANGO_SETTINGS_MODULE'] = 'codenode.frontend._desktop_settings'
-                check_home_dir()
+                envroot = DESKTOP_ENV              
 
             elif settings: 
                 os.environ['DJANGO_SETTINGS_MODULE'] = settings
 
             else:
                 if not os.path.exists(os.path.join('frontend', 'settings.py')):
-                    print 'frontend.settings does not exists, please use inside a directory created with codenode-admin init'
+                    print 'frontend.settings does not exists, please use inside a directory' \
+                    ' created with codenode-admin init'
                     sys.exit(1)
-                sys.path = [os.getcwd()] + sys.path
-                os.environ['DJANGO_SETTINGS_MODULE'] = 'frontend.settings'
+
+            # make the django settings module importable and cd to it so spawned processes
+            # can pick it up
+            sys.path = [envroot] + sys.path
+            os.chdir(envroot)
+        
+        # check the directory is good to go
+        check_home_dir()
         
         # use devel_mode if we are running the devel env
         if devel and 'devel_mode' in inspect.getargspec(command)[0]:
@@ -104,7 +117,7 @@ def check_home_dir():
     search.create_index()
 
 
-def init_command(name=None, test=False):
+def init_command(name=False, test=False, devel=False, desktop=False):
     """
     Initialize a codenode.
 
@@ -122,14 +135,27 @@ def init_command(name=None, test=False):
     """
     
     osjoin = os.path.join
-    abspath = os.path.abspath(".")
-    envroot = osjoin(abspath, name)
-    pkgroot = os.sep.join(codenode.__file__.split(os.sep)[:-1])
+    copytree = shutil.copytree
+    pkgroot = CODE_PATH
+    settingstemplate = '_settings.py'
+    
+    if desktop: 
+        envroot = DESKTOP_ENV
+    elif devel: 
+        envroot = DEVEL_ENV
+        settingstemplate = '_devel_settings.py'
+        test = True
+    else:     
+        abspath = os.path.abspath(".")
+        envroot = osjoin(abspath, name)
+
+    if os.path.exists(envroot):
+        print 'target directory (%s) already exists, exiting...' % envroot
+        sys.exit(1)
     os.mkdir(envroot)
     
-    copytree = shutil.copytree
-    
     if test:
+        # for test environments we symlink to the code rather than copy
         try: 
             copytree = os.symlink
         except AttributeError:
@@ -138,7 +164,7 @@ def init_command(name=None, test=False):
     for dir in ["frontend", "backend"]:
         os.makedirs(osjoin(envroot, dir))
         open(osjoin(osjoin(envroot, dir), "__init__.py"), "w").close()
-        settingsfile = osjoin(osjoin(pkgroot, dir), "_settings.py")
+        settingsfile = osjoin(osjoin(pkgroot, dir), settingstemplate)
         shutil.copyfile(settingsfile,  osjoin(osjoin(envroot, dir), "settings.py"))
 
     for dir in ["static", "templates"]:

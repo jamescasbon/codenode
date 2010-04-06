@@ -1,6 +1,6 @@
 import os 
 
-from _settings import *
+from codenode.frontend._settings import *
 
 HOME_PATH = os.path.join(PROJECT_PATH, '..', '..', 'devel', 'env')
 
