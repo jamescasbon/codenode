@@ -71,7 +71,7 @@ def setup_django(command):
     return wrapper
     
     
-def build_twisted_cli(command, daemonize=False, devel_mode=False):
+def build_twisted_cli(command, daemonize=False, devel_mode=False, pid_filename='codenode.pid'):
     """
     Build twisted incantation for a particular command
     """
@@ -80,6 +80,8 @@ def build_twisted_cli(command, daemonize=False, devel_mode=False):
     cmd = "twistd "
     if not daemonize:
         cmd += "-n "
+    cmd += "--pidfile=%s " % os.path.join(settings.HOME_PATH, pid_filename)
+
     cmd += "%s " % command
     cmd += "--env_path=%s " % settings.HOME_PATH
     
@@ -87,8 +89,10 @@ def build_twisted_cli(command, daemonize=False, devel_mode=False):
         cmd += "--server_log=%s " % os.path.join(settings.HOME_PATH, 'server.log')
         cmd += "--static_files=%s " % settings.MEDIA_ROOT
         
+        
     if devel_mode: 
-        cmd += "--devel_mode " 
+        cmd += "--devel_mode "
+        
     return cmd
     
     
@@ -194,7 +198,8 @@ def frontend_command(daemonize=False, devel_mode=False):
     """
     Run the Frontend server.
     """
-    os.system(build_twisted_cli('codenode-frontend', daemonize, devel_mode))
+    os.system(build_twisted_cli('codenode-frontend', 
+                                daemonize, devel_mode, pid_filename='frontend.pid'))
 
 
 @setup_django
@@ -202,7 +207,8 @@ def backend_command(daemonize=False, devel_mode=False):
     """
     Run a Backend Server.
     """
-    os.system(build_twisted_cli('codenode-backend', daemonize, devel_mode))
+    os.system(build_twisted_cli('codenode-backend', 
+                                daemonize, devel_mode, pid_filename='backend.pid'))
 
 
 @setup_django
