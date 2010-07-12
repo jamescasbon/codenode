@@ -41,9 +41,17 @@ def setup_django(command):
             
             if devel: 
                 envroot = DEVEL_ENV
+                if not os.path.exists(envroot):
+                    print 'development environment does not exist, '\
+                        'please create with "codenode-admin init -desktop"'
+                    sys.exit(1)
                 
             elif desktop:
-                envroot = DESKTOP_ENV              
+                envroot = DESKTOP_ENV          
+                if not os.path.exists(envroot):
+                    print 'desktop environment does not exist, '\
+                        'please create with "codenode-admin init -devel"'
+                    sys.exit(1)
 
             elif settings: 
                 os.environ['DJANGO_SETTINGS_MODULE'] = settings
@@ -51,7 +59,7 @@ def setup_django(command):
             else:
                 if not os.path.exists(os.path.join('frontend', 'settings.py')):
                     print 'frontend.settings does not exists, please use inside a directory' \
-                    ' created with codenode-admin init'
+                    ' created with "codenode-admin init dirname" or specify "-desktop" or "-devel"'
                     sys.exit(1)
 
             # make the django settings module importable and cd to it so spawned processes

@@ -7,6 +7,7 @@ The codenode Command Line Admin Tool
 
 **Running codenode, quickstart**::
 
+    $ codenode-admin init -desktop
     $ codenode-admin run -desktop
     #Now open browser to http://localhost:8000
 

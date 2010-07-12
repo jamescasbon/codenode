@@ -61,7 +61,7 @@ Devel environment and database
 The ``-devel`` switch to codenode-admin activates the development environment and if necessary
 creates a dir called env in the codenode/devel dir. *env* is called a codenode *environment* and is the development version of::
 
-    $ codenode-admin init -name env
+    $ codenode-admin init -devel
 
 
 ``codenode-admin resetdb -devel`` can be used to reset the frontend database without recreating all of the env environment.
@@ -99,4 +99,10 @@ this raw capability.
 You can enter a manhole with ``codenode-admin frontendmanhole`` or ``codenode-admin backendmanhole``
 
 
+Running Tests
+-------------
+
+To run tests, you must install `django-nose` and `nose`.
+
+The call the suite, run `test.sh` from the top level directory.
 
