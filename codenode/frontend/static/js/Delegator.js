@@ -379,6 +379,22 @@ evalAction.handler = function(e) {
    e.groupNode.focusDown();
 }; 
 
+toggleEvalAction = new Notebook.Action('toggleeval');
+toggleEvalAction.keyCodes = [13];
+toggleEvalAction.ctrl = true;
+toggleEvalAction.type = 'keydown';
+toggleEvalAction.preventDefault = true;
+toggleEvalAction.handler = function(e) {
+    // TODO: write proper input toggler
+   if (e.groupNode.cellstyle == 'input') { 
+       e.groupNode.setStyle('markdown');
+   } else { 
+       e.groupNode.setStyle('input');
+   }
+   e.groupNode.evaluate();
+   e.groupNode.focusDown();
+};
+
 stopevalAction = new Notebook.Action('eval');
 stopevalAction.keyCodes = [13];
 stopevalAction.shift = true;
@@ -555,6 +571,7 @@ Notebook.__init__.Delegator = function() {
                                 cellUpArrowAction,
                                 cellDownArrowAction,
                                 evalAction,
+                                toggleEvalAction,
                                 stopevalAction,
                                 cellTabFilter,
                                 cellTabAction,
