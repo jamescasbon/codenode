@@ -199,10 +199,11 @@ Notebook.TreeBranch.spawnOutputCellNode = function(id, cellstyle, content, count
         node.id = id + 'o';
         node.setType();
         self.enableSpawner(node);
-        node.content(content);
         node.numberLabel(count);
         self.setOutputCell(node, id);
-        return;
+        // set the content after appening to the DOM to please mathjax
+        node.content(content);
+        return node;
     } else {
         self.setNullOutputCell(id);
     }
