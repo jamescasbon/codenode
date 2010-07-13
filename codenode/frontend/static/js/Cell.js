@@ -824,9 +824,8 @@ Notebook.Cell.prototype.evaluate = function() {
         var converter = new Showdown.converter();
         var content = converter.makeHtml(this.textareaNode().value);
         var t = Notebook.TreeBranch;
-        t.spawnOutputCellNode(this.id, 'outputhtml', content, 'outcount');
-        // this.getParentBranch().toggleOpen()
-        //TODO: save notebook at this point
+        var node = t.spawnOutputCellNode(this.id, 'outputhtml', content, 'outcount');
+        Notebook.Save.save()
     }
 };
 
