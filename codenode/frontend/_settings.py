@@ -136,6 +136,7 @@ COMPRESS_JS = {
             'external/jqModal.dev.js',
             'external/showdown.js',
             'external/MathJax/MathJax.js',
+            'external/bespin/BespinEmbedded.js',
             
             'js/BrowserDetect.js', #53: remove browser detection
             'js/Notebook.js', 

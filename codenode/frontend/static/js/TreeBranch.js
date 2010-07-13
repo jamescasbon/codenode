@@ -58,6 +58,7 @@ Notebook.TreeBranch.spawnCellNodeLoad = function(cellid, cellstyle, content, pro
     cellnode.setType();
     self.enableSpawner(cellnode);
     cellnode.content(content);
+    // if (cellstyle == 'input') { bespin.useBespin(cellnode.textareaNode())}
     return cellnode;
 };
 
@@ -213,6 +214,8 @@ Notebook.TreeBranch.spawnInputCellNode = function() {
     node.setStyle('input');
     node.setType();
     self.enableSpawner(node);
+    // console.log('calling bespin')
+    bespin.useBespin(node.textareaNode())
     return node;
 };
 

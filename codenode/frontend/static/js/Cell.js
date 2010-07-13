@@ -163,9 +163,19 @@ Notebook.Cell.prototype.setAsGroup = function() {
 Notebook.Cell.prototype.setType = function() {
     switch(this.celltype) {
         case 'input':
+            // $(this.contentNode()).append($.DIV({'class': 'input'}));
             $(this.contentNode()).append(Notebook.dom._textarea());
             this.textareaNode().cellid = this.id;
             this.textareaNode().eventtype = 'input';
+            
+            this.textareaNode().id = 'foo';            
+            // this.textareaNode().id = this.id + '_input';
+            // bespin.useBespin(this.textareaNode()).then(function (env) {
+            //     console.log('bespin init');
+            //     env.editor.value = 'oh hai';
+            //     env.dimensionsChanged();
+            // });
+             
             break;
         case 'output':
             switch(this.cellstyle) {
@@ -560,6 +570,7 @@ Notebook.Cell.prototype.clearNumberLabel = function() {
 Notebook.Cell.prototype.content = function(newcontent) {
     if (!newcontent) {
         if (this.celltype == 'input') {
+            console.log('getting input' + this.contentNode().childNodes[0]);
             return this.contentNode().childNodes[0].value;
         } 
         if (this.celltype == 'output') {
@@ -641,13 +652,14 @@ Notebook.Cell.prototype.textareaNode = function() {
     return this.contentNode().childNodes[0];
 };
 
-/** adjustTextarea */
+/** xtarea */
 // if there is a textarea, set the number of rows
 // triggered by keyup for editable cells
 // also used for outputtext
 Notebook.Cell.prototype.adjustTextarea = function() {
+    // console.log('adjusting' + this + this.class + this.id)
     if (this.celltype == 'input') { 
-        var rows = this.content().split('\n').length;
+        var rows = 10;//this.content().split('\n').length;
         this.textareaNode().rows = rows;
         var h = $(this.textareaNode()).height();
         //h += getElementDimensions(this.spawnerNode()).h;
