@@ -169,7 +169,6 @@ Notebook.TreeBranch.setOutputCell = function(outputnode, inputid) {
     $('img.outputimage').one('load', oid, function(e) {
             $('#'+e.data)[0].adjustTextarea();
             });
-    outputnode.adjustTextarea();
     //outputnode.saved = true;
     if ($('#auxdisplay').html() == 'spawner') {
         outputnode.spawnerNode().setFocus();
@@ -200,6 +199,7 @@ Notebook.TreeBranch.spawnOutputCellNode = function(id, cellstyle, content, count
         self.setOutputCell(node, id);
         // set the content after appening to the DOM to please mathjax
         node.content(content);
+        node.adjustTextarea();
         return node;
     } else {
         self.setNullOutputCell(id);
