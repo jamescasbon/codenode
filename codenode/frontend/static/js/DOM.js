@@ -115,6 +115,13 @@ Notebook.DOM._textoutput = function() {
     return node;
 };
 
+Notebook.DOM._htmloutput = function() {
+    var node = $.DIV({
+            'class':'outputhtml',
+            });
+    return node;
+};
+
 Notebook.DOM._imageoutput = function() {
     return $.A({'class':'outputimage','href':'#'}, $.IMG({'class':'outputimage'}));
 };
@@ -157,6 +164,14 @@ Notebook.DOM._spawner = function() {
     return node;
 };
 
+Notebook.DOM._markdown_edit_button = function(btype) {
+        var node = $.SPAN({
+            'class':'markdownedit'
+            });
+        $(node).html('click to edit')
+        return node;
+};
+
 /*
 Notebook.DOM.spawnPrompt = function() {
     var node = DIV({
@@ -172,13 +187,14 @@ Notebook.DOM.spawnPrompt = function() {
 Notebook.DOM.contextMenu = function() {
     return $.DIV({'class':'contextMenu', 'id':'bracketMenu'},
             $.UL(null,
-                $.LI({'id':'totitle'}, 'Title'),
-                $.LI({'id':'tosubtitle'}, 'Subtitle'),
-                $.LI({'id':'tosection'}, 'Section'),
-                $.LI({'id':'tosubsection'}, 'Subsection'),
-                $.LI({'id':'totext'}, 'Text'),
+                // $.LI({'id':'totitle'}, 'Title'),
+                // $.LI({'id':'tosubtitle'}, 'Subtitle'),
+                // $.LI({'id':'tosection'}, 'Section'),
+                // $.LI({'id':'tosubsection'}, 'Subsection'),
+                // $.LI({'id':'totext'}, 'Text'),
                 $.LI({'id':'toinput'}, 'Input'),
-                $.LI({'id':'tooutput'}, 'Output'),
+                // $.LI({'id':'tooutput'}, 'Output'),
+                $.LI({'id':'tomarkdown'}, 'Markdown'),
                 $.LI({'id':'delete'}, 'Delete')
               ));
 };

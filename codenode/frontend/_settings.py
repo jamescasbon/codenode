@@ -135,6 +135,7 @@ COMPRESS_JS = {
             'external/jquery.dimensions.js',
             'external/jquery.fieldselection.js',
             'external/jqModal.dev.js',
+            'external/showdown.js',
             
             'js/BrowserDetect.js', #53: remove browser detection
             'js/Notebook.js', 

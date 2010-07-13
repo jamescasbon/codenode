@@ -119,6 +119,7 @@ Notebook.TreeBranch.changeToSubsection = function(node) {
     Notebook.TreeBranch.changeCell('subsection', node);
 };
 
+
 Notebook.TreeBranch.changeToInput = function(node) {
     Notebook.TreeBranch.changeCell('input', node);
 };
