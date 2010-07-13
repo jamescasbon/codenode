@@ -17,6 +17,10 @@ Notebook = {};
 Notebook.__init__ = {};
 
 Notebook.initialize = function() {
+    // as per http://sourceforge.net/projects/mathjax/forums/forum/948701/topic/3544239
+    // can be removed > beta-1
+    MathJax.Hub.Register.StartupHook("End",function () {MathJax.isReady = true}); 
+    
     browser = new BrowserDetect();
     browser.init();
     $.ifixpng('/static/img/pixel.gif');
