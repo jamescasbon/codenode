@@ -8,5 +8,3 @@ codenode.egg-info/
 dist/
 codenode/frontend/static/external/MathJax
 codenode/frontend/static/external/bespin
-
-
