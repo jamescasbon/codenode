@@ -540,6 +540,7 @@ Notebook.__init__.Delegator = function() {
                                 mainNullClick,
                                 cellContentChange,
                                 bracketRightDown],
+            'span.markdownedit' : [mainNullClick],
         },
         'div.cell.group': {
             'span.bracketng': [bracketClick,
@@ -555,7 +556,11 @@ Notebook.__init__.Delegator = function() {
                                     mainNullClick],
             'a.outputimage': [cellUpArrowAction,
                                 cellDownArrowAction],
-            'img.outputimage': [mainNullClick]
+            'img.outputimage': [mainNullClick],
+            // need some way to specfify all the elements inside the markdown
+            'div.outputhtml': [cellUpArrowAction,
+                                cellDownArrowAction,
+                                mainNullClick],
         },
         'div.main': {
             'div.botpad': [bottompadClick]
@@ -594,6 +599,12 @@ Notebook.__init__.Delegator = function() {
                 Notebook.bracketSelector.modifySelectionStyle('input');
             },
             'delete': function(t) {
+                Notebook.bracketSelector.deleteSelections();
+            },
+            'tomarkdown': function(t) {
+                Notebook.bracketSelector.modifySelectionStyle('markdown');
+            },
+            'deletegroup': function(t) {
                 Notebook.bracketSelector.deleteSelections();
             }
         },
