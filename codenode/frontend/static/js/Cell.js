@@ -822,9 +822,16 @@ Notebook.Cell.prototype.evaluate = function() {
     }
     if (this.cellstyle == "markdown") { 
         var converter = new Showdown.converter();
-        var content = converter.makeHtml(this.textareaNode().value);
-        var t = Notebook.TreeBranch;
-        var node = t.spawnOutputCellNode(this.id, 'outputhtml', content, 'outcount');
+        var content = this.textareaNode().value;
+        
+        // dirty hack to prevent user having to double escape mathjax commands 
+        content = content.replace('\\(', '\\\\(');
+        content = content.replace('\\)', '\\\\)')
+        content = content.replace('\\[', '\\\\[')
+        content = content.replace('\\]', '\\\\]')
+        
+        content = converter.makeHtml(content);
+        Notebook.TreeBranch.spawnOutputCellNode(this.id, 'outputhtml', content, 'outcount');
         Notebook.Save.save()
     }
 };
