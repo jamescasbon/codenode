@@ -134,7 +134,7 @@ Notebook.Cell.prototype.setStyle = function(cellstyle) {
             this.cellevel = 10;
             this.evaluatable = false;
             this.editable = true;
-            this.className = 'cell markdown';
+            this.className = 'cell input';
             break;
         case 'outputhtml':
             this.celltype = 'output';
@@ -591,7 +591,8 @@ Notebook.Cell.prototype.content = function(newcontent) {
                 case 'outputimage':
                     return $(this.contentNode()).find('img.outputimage')[0].src;
                 case 'outputhtml':
-                    return $(this.contentNode().childNodes[0]).html();
+                    return this.pretypesethtml
+                    // return $(this.contentNode().childNodes[0]).html();
 
             }
         }
@@ -626,15 +627,17 @@ Notebook.Cell.prototype.content = function(newcontent) {
                     break;
                 case 'outputhtml':
                     $(this.contentNode().childNodes[0]).html(newcontent);
+                    // store a copy of the content before MathJax has typeset it
+                    // which is the html to be saved
+                    this.pretypesethtml = newcontent;
                     
                     if (MathJax.isReady) { 
-                        // TODO: svn release of MathJax supports one api call:
+                        // TODO: > beta-1 release of MathJax supports one api call:
+                        // which performs its own isReady check
                         // MathJax.Hub.Typeset(this.contentNode().childNodes[0]); 
                         
-                        // Disabled due to jquery bug
-                        // MathJax.Extension.tex2jax.PreProcess(this.contentNode().childNodes[0]); 
-                        // MathJax.Hub.Process(this.contentNode().childNodes[0]);
-                        // alert(this.contentNode().childNodes[0].innerHTML);
+                        MathJax.Extension.tex2jax.PreProcess(this.contentNode().childNodes[0]); 
+                        MathJax.Hub.Process(this.contentNode().childNodes[0]);
                     }
                     break;
             }
@@ -817,7 +820,7 @@ Notebook.Cell.prototype.evaluate = function() {
         //!! reference to ASYNC
         Notebook.Async.evalCell(this.id,this.content());
     }
-    if (this.className == "cell markdown") { 
+    if (this.cellstyle == "markdown") { 
         var converter = new Showdown.converter();
         var content = converter.makeHtml(this.textareaNode().value);
         var t = Notebook.TreeBranch;
