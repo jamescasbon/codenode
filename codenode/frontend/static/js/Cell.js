@@ -129,6 +129,21 @@ Notebook.Cell.prototype.setStyle = function(cellstyle) {
             this.className = 'cell text';
             this.canbehead = false;
             break;
+        case 'markdown':
+            this.celltype = 'input';
+            this.cellevel = 10;
+            this.evaluatable = false;
+            this.editable = true;
+            this.className = 'cell markdown';
+            break;
+        case 'outputhtml':
+            this.celltype = 'output';
+            this.cellevel = 11;
+            this.evaluatable = false;
+            this.editable = false;
+            //this.className = 'cell outputtext';
+            this.className = 'cell output';
+            break;
     }
 };
 
@@ -162,8 +177,12 @@ Notebook.Cell.prototype.setType = function() {
                 case 'outputimage':
                     $(this.contentNode()).append(Notebook.dom._imageoutput());
                     break;   
+                case 'outputhtml':
+                    $(this.contentNode()).append(Notebook.dom._htmloutput());
+                    break;
             }
             break;
+ 
     }
 };
 
@@ -330,6 +349,9 @@ Notebook.Cell.prototype.setFocus = function() {
     switch(this.celltype) {
         case 'input':
             this.textareaNode().focus();
+            if (this.cellstyle ==  'markdown') { 
+                $(this.textareaNode()).show("slow");
+            };
             break;
         case 'group':
             this.contentNode().firstChild.setFocus();
@@ -465,14 +487,22 @@ Notebook.Cell.prototype.contentChanged = function() {
 
 Notebook.Cell.prototype.closeGroup = function() {
     if (this.celltype == 'group' && this.open) {
-        $(this.contentNode().firstChild).nextAll().hide()
+        if (this.contentNode().firstChild.cellstyle == 'markdown') { 
+            $(this.contentNode().firstChild).hide();
+        } else { 
+            $(this.contentNode().firstChild).nextAll().hide();
+        }
         this.open = false;
     }
 };
 
 Notebook.Cell.prototype.openGroup = function() {
     if (this.celltype == 'group' && !this.open) {
-        $(this.contentNode().firstChild).nextAll().show()
+        if (this.contentNode().firstChild.cellstyle == 'markdown') { 
+            $(this.contentNode().firstChild).show();
+        } else {
+            $(this.contentNode().firstChild).nextAll().show();
+        }
         this.open = true;
     }
 };
@@ -538,6 +568,9 @@ Notebook.Cell.prototype.content = function(newcontent) {
                     return this.contentNode().childNodes[0].value;
                 case 'outputimage':
                     return $(this.contentNode()).find('img.outputimage')[0].name;
+                case 'outputhtml':
+                    return $(this.contentNode().childNodes[0]).html();
+
             }
         }
         if (this.celltype == 'group') {
@@ -568,6 +601,19 @@ Notebook.Cell.prototype.content = function(newcontent) {
                     // parameterize image path
                     $(this.contentNode()).find('img.outputimage')[0].src = '/data/plot_images/'+newcontent;
                     $(this.contentNode()).find('img.outputimage')[0].name = newcontent;
+                    break;
+                case 'outputhtml':
+                    $(this.contentNode().childNodes[0]).html(newcontent);
+                    
+                    if (MathJax.isReady) { 
+                        // TODO: svn release of MathJax supports one api call:
+                        // MathJax.Hub.Typeset(this.contentNode().childNodes[0]); 
+                        
+                        // Disabled due to jquery bug
+                        // MathJax.Extension.tex2jax.PreProcess(this.contentNode().childNodes[0]); 
+                        // MathJax.Hub.Process(this.contentNode().childNodes[0]);
+                        // alert(this.contentNode().childNodes[0].innerHTML);
+                    }
                     break;
             }
         }
@@ -604,7 +650,7 @@ Notebook.Cell.prototype.adjustTextarea = function() {
         //h += getElementDimensions(this.spawnerNode()).h;
         //$(this).height(h);
         return true;
-    } else if (this.cellstyle == 'outputtext') {
+    } else if (this.cellstyle == 'outputtext' || this.cellstyle == 'markdown') {
         var rows = this.content().split('\n').length;
         this.textareaNode().rows = rows;
         var tawidth = $(this.textareaNode()).width();
@@ -747,6 +793,14 @@ Notebook.Cell.prototype.evaluate = function() {
         this.highlightBracket()
         //!! reference to ASYNC
         Notebook.Async.evalCell(this.id,this.content());
+    }
+    if (this.className == "cell markdown") { 
+        var converter = new Showdown.converter();
+        var content = converter.makeHtml(this.textareaNode().value);
+        var t = Notebook.TreeBranch;
+        t.spawnOutputCellNode(this.id, 'outputhtml', content, 'outcount');
+        // this.getParentBranch().toggleOpen()
+        //TODO: save notebook at this point
     }
 };
 
