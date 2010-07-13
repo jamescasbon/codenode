@@ -10,6 +10,8 @@ import os
 import shutil
 import sys
 import inspect
+import tempfile
+import urllib
 from functools import wraps
 
 from django.core.management import call_command
@@ -279,8 +281,38 @@ def frontendmanhole_command():
     """
     # TODO: pick up port from configuration
     os.system('telnet localhost 6023')
+
+
+def installmathjax_command():
+    """
+    Install MathJax fonts
+    """
+    target = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static', 'external')
+    target = os.path.abspath(target)
+    os.chdir(target)
+    codepkg = 'http://downloads.sourceforge.net/project/mathjax/MathJax/beta2/MathJax-beta2.zip'
+    fontpkg = 'http://downloads.sourceforge.net/project/mathjax/MathJax-webfonts/MathJax-webfonts-beta2.zip'
     
-        
+    print 'fetching MathJax from SF, could be slooooow....'
+    print 'fetching code...'
+    codetmp = tempfile.NamedTemporaryFile()
+    codetmp.write(urllib.urlopen(codepkg).read())
+    codetmp.flush()
+    
+    print 'fetching fonts... (12MB)'
+    fonttmp = tempfile.NamedTemporaryFile()
+    fonttmp.write(urllib.urlopen(fontpkg).read())
+    fonttmp.flush()
+    
+    print 'installing in', target
+    os.system('unzip %s' % codetmp.name)
+    # Needs python 2.6:    
+
+    os.chdir('MathJax')
+    os.system('unzip %s' % fonttmp.name)
+    
+    
+    
 def help_command(**options):
     """
     Prints out help for the commands. 
