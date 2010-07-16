@@ -58,7 +58,6 @@ Notebook.TreeBranch.spawnCellNodeLoad = function(cellid, cellstyle, content, pro
     cellnode.setType();
     self.enableSpawner(cellnode);
     cellnode.content(content);
-    // if (cellstyle == 'input') { bespin.useBespin(cellnode.textareaNode())}
     return cellnode;
 };
 
@@ -128,10 +127,16 @@ Notebook.TreeBranch.putCellNodeAfter = function(oldersibling, node) {
     self.collapseBranch($(oldersibling)[0].getParentBranch());
     self.sieveBranch(branchesbranch);
     $('img.bracketmaskimg').ifixpng('/static/img/pixel.gif');//xxx iehack
+    console.log('placing ' + node.id)
+    node.bespinify(); // TODO: proper post place signal
 };
 
 Notebook.TreeBranch.putCellNodeAtTop = function(node) {
+    // node here can be a list of nodes 
     $('#main > :first-child').before(node);
+    console.log('placing ' + node.length)
+    $(node).each(function(i,n){n.bespinify()});
+    // node.bespinify(); // TODO: proper post place signal
 };
 
 Notebook.TreeBranch.removeCellNode = function(node) {
@@ -214,8 +219,6 @@ Notebook.TreeBranch.spawnInputCellNode = function() {
     node.setStyle('input');
     node.setType();
     self.enableSpawner(node);
-    // console.log('calling bespin')
-    bespin.useBespin(node.textareaNode())
     return node;
 };
 

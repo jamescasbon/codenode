@@ -95,10 +95,12 @@ Notebook.DOM._content = function() {
 
 Notebook.DOM._textarea = function() {
     var node = $.TEXTAREA({
-            'class':'input',
+            'class':'input bespin',
             'cols':'1',
-            'rows':'1'
+            'rows':'5',
             });
+            
+    // $('#spawnzone').after(node);
     return node;
 };
 

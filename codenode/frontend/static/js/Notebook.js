@@ -98,6 +98,7 @@ Notebook.initialize = function() {
     $('#titlecontainer').bind('click', Util.startChangeTitle);//xxx eventHack
     var contextmenu = Notebook.DOM.contextMenu();
     $('#foot').after(contextmenu);
+    $('#foot').after($.DIV({'id': 'spawnzone'}));
 };
 
 Notebook.SelectionManager = function() {
@@ -156,6 +157,15 @@ __notebook_component_inits__ = function() {
     Notebook.__init__.Completer();
     Notebook.__init__.Async();
     Util.init();
+    window.onBespinLoad = function(){
+          console.log('hi');
+          Notebook.bespinLoaded = true;
+              
+      };
+    // $(window).bind('onBespinLoad', function(){
+    //         // bespin.useBespin(id, config);
+    //         console.log('ini');
+    // });
 };
 
 $(document).ready(__notebook_component_inits__);

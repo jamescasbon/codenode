@@ -53,6 +53,7 @@ Notebook.Cell.prototype.setStyle = function(cellstyle) {
     this.open = true;
     this.oldcontent = '';
     this.spawnerNode().enabled = false;
+    this.placed = false;
 
     switch(cellstyle) {
         case 'title':
@@ -160,6 +161,28 @@ Notebook.Cell.prototype.setAsGroup = function() {
     $(this.spawnerNode()).hide();//xxx
 };
 
+Notebook.Cell.prototype.bespinify = function() {
+    if (this.celltype == 'input' & Notebook.bespinLoaded) { 
+        // This focus steal is too late
+        // this.childNodes[0].bespin =
+        var cell = this;
+        var promise = bespin.useBespin(this.textareaNode(),
+            {
+                stealFocus: true,
+                syntax: "js",
+            }
+        ).then(function(env) {
+            console.log('prim' + cell.textareaNode());
+            cell.textareaNode().bespin = env;
+            console.log('prim');
+        });
+        
+        console.log('promise is' + promise);
+        // this.textareaNode().bespin = promise;
+    };
+};
+
+
 Notebook.Cell.prototype.setType = function() {
     switch(this.celltype) {
         case 'input':
@@ -167,15 +190,6 @@ Notebook.Cell.prototype.setType = function() {
             $(this.contentNode()).append(Notebook.dom._textarea());
             this.textareaNode().cellid = this.id;
             this.textareaNode().eventtype = 'input';
-            
-            this.textareaNode().id = 'foo';            
-            // this.textareaNode().id = this.id + '_input';
-            // bespin.useBespin(this.textareaNode()).then(function (env) {
-            //     console.log('bespin init');
-            //     env.editor.value = 'oh hai';
-            //     env.dimensionsChanged();
-            // });
-             
             break;
         case 'output':
             switch(this.cellstyle) {
@@ -570,8 +584,15 @@ Notebook.Cell.prototype.clearNumberLabel = function() {
 Notebook.Cell.prototype.content = function(newcontent) {
     if (!newcontent) {
         if (this.celltype == 'input') {
-            console.log('getting input' + this.contentNode().childNodes[0]);
-            return this.contentNode().childNodes[0].value;
+            
+            var promise = this.contentNode().childNodes[0].bespin;
+            console.log('getting input' + promise + promise.editor);
+            if (promise) {
+                return promise.editor.value;
+            } else { 
+                console.log('bespin not available')
+                return '';
+            }
         } 
         if (this.celltype == 'output') {
             switch (this.cellstyle) {
@@ -662,6 +683,7 @@ Notebook.Cell.prototype.adjustTextarea = function() {
         var rows = 10;//this.content().split('\n').length;
         this.textareaNode().rows = rows;
         var h = $(this.textareaNode()).height();
+        // this.textareaNode().bespin.dimensionsChanged();
         //h += getElementDimensions(this.spawnerNode()).h;
         //$(this).height(h);
         return true;
