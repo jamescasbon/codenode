@@ -164,9 +164,8 @@ Notebook.Cell.prototype.setAsGroup = function() {
 Notebook.Cell.prototype.bespinify = function() {
     if (this.celltype == 'input' & Notebook.bespinLoaded) { 
         // This focus steal is too late
-        // this.childNodes[0].bespin =
         var cell = this;
-        var promise = bespin.useBespin(this.textareaNode(),
+        bespin.useBespin(this.textareaNode(),
             {
                 stealFocus: true,
                 syntax: "js",
@@ -174,11 +173,7 @@ Notebook.Cell.prototype.bespinify = function() {
         ).then(function(env) {
             console.log('prim' + cell.textareaNode());
             cell.textareaNode().bespin = env;
-            console.log('prim');
         });
-        
-        console.log('promise is' + promise);
-        // this.textareaNode().bespin = promise;
     };
 };
 
@@ -680,12 +675,14 @@ Notebook.Cell.prototype.textareaNode = function() {
 Notebook.Cell.prototype.adjustTextarea = function() {
     // console.log('adjusting' + this + this.class + this.id)
     if (this.celltype == 'input') { 
-        var rows = 10;//this.content().split('\n').length;
-        this.textareaNode().rows = rows;
-        var h = $(this.textareaNode()).height();
-        // this.textareaNode().bespin.dimensionsChanged();
+        var rows = this.content().split('\n').length;
+        var h = ((25*rows)+15);
+        $(this.textareaNode()).height(h);
+        // $(this.childNodes[0]).height(300);  
+        this.textareaNode().bespin.dimensionsChanged();
+        console.log('dc' + $(this.childNodes[0]).height());
         //h += getElementDimensions(this.spawnerNode()).h;
-        //$(this).height(h);
+        $(this).height(h);
         return true;
     } else if (this.cellstyle == 'outputtext' || this.cellstyle == 'markdown') {
         var rows = this.content().split('\n').length;

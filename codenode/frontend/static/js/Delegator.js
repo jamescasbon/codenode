@@ -87,9 +87,9 @@ Notebook.Delegator.prototype = {
         var target_selector = e.target.tagName.toLowerCase() + '.' + e.target.className;
         var target_group = self.targets[target_selector];
 
-        console.log('delegating ' + target_selector + ' event to ' + 
-            group_element + ' specified by ' + target_group
-        )
+        // console.log('delegating ' + target_selector + ' event to ' + 
+        //     group_element + ' specified by ' + target_group + ' ' + e.type
+        // )
 
         if (target_group) {
             var group_element = $(e.target).parents(target_group);
@@ -557,20 +557,20 @@ Notebook.__init__.Delegator = function() {
                                 mainNullClick,
                                 cellContentChange,
                                 bracketRightDown],
-            // 'canvas.': [adjustCellAction,
-            //                     cellUpArrowAction,
-            //                     cellDownArrowAction,
-            //                     evalAction,
-            //                     toggleEvalAction,
-            //                     stopevalAction,
-            //                     cellTabFilter,
-            //                     cellTabAction,
-            //                     pageTabcompletions,
-            //                     tabcompleteExitAction,
-            //                     refineTabcompletion,
-            //                     mainNullClick,
-            //                     cellContentChange,
-            //                     bracketRightDown],
+            'canvas.': [adjustCellAction,
+                                cellUpArrowAction,
+                                cellDownArrowAction,
+                                evalAction,
+                                toggleEvalAction,
+                                stopevalAction,
+                                cellTabFilter,
+                                cellTabAction,
+                                pageTabcompletions,
+                                tabcompleteExitAction,
+                                refineTabcompletion,
+                                mainNullClick,
+                                cellContentChange,
+                                bracketRightDown],
             'span.markdownedit' : [mainNullClick],
         },
         'div.cell.group': {
