@@ -171,8 +171,11 @@ Notebook.Cell.prototype.bespinify = function() {
                 syntax: "js",
             }
         ).then(function(env) {
-            console.log('prim' + cell.textareaNode());
+            // TODO: this is not executed if the editor is set up automatically
+            // so the content does not get set.
             cell.textareaNode().bespin = env;
+            // env.editor.value = cell.oldcontent;
+            cell.adjustTextarea();
         });
     };
 };
@@ -365,9 +368,10 @@ Notebook.Cell.prototype.isGroup = function() {
 /** setFocus, depending on celltype (including creators) */
 // !! REDO !!
 Notebook.Cell.prototype.setFocus = function() {
+    console.log('setting focus to ' + this.id)
     switch(this.celltype) {
         case 'input':
-            this.textareaNode().focus();
+            this.textareaNode().focus = true;
             if (this.cellstyle ==  'markdown') { 
                 $(this.textareaNode()).show("slow");
             };
@@ -579,13 +583,12 @@ Notebook.Cell.prototype.clearNumberLabel = function() {
 Notebook.Cell.prototype.content = function(newcontent) {
     if (!newcontent) {
         if (this.celltype == 'input') {
-            
+            // If the editor is initialized, return the value else return ''
             var promise = this.contentNode().childNodes[0].bespin;
-            console.log('getting input' + promise + promise.editor);
             if (promise) {
                 return promise.editor.value;
             } else { 
-                console.log('bespin not available')
+                // console.log('bespin not available')
                 return '';
             }
         } 
@@ -606,8 +609,15 @@ Notebook.Cell.prototype.content = function(newcontent) {
         }
     } else {
         if (this.celltype == 'input') {
-            this.contentNode().childNodes[0].value = newcontent;
+            console.log('setting content to ' + newcontent)
+            if (this.contentNode().childNodes[0].bespin) { 
+                // If bespin is initialised put the content in the editor
+                this.contentNode().childNodes[0].bespin.editor.value = newcontent;
+            } else {
+                $(this.contentNode().childNodes[0]).text(newcontent);
+            };
             this.oldcontent = newcontent;
+            // console.log('set content on ' + this.contentNode().childNodes[0].bespin)
         } 
         if (this.celltype == 'output') {
             switch (this.cellstyle) {
@@ -676,11 +686,14 @@ Notebook.Cell.prototype.adjustTextarea = function() {
     // console.log('adjusting' + this + this.class + this.id)
     if (this.celltype == 'input') { 
         var rows = this.content().split('\n').length;
-        var h = ((25*rows)+15);
+        
+        // TODO: proper height calculation for element
+        var h = ((25*rows)+35);
         $(this.textareaNode()).height(h);
         // $(this.childNodes[0]).height(300);  
-        this.textareaNode().bespin.dimensionsChanged();
-        console.log('dc' + $(this.childNodes[0]).height());
+        if (this.textareaNode().bespin) {
+            this.textareaNode().bespin.dimensionsChanged();
+        }
         //h += getElementDimensions(this.spawnerNode()).h;
         $(this).height(h);
         return true;

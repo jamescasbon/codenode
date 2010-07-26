@@ -134,7 +134,7 @@ Notebook.TreeBranch.putCellNodeAfter = function(oldersibling, node) {
 Notebook.TreeBranch.putCellNodeAtTop = function(node) {
     // node here can be a list of nodes 
     $('#main > :first-child').before(node);
-    console.log('placing ' + node.length)
+    // console.log('placing ' + node.length);
     $(node).each(function(i,n){n.bespinify()});
     // node.bespinify(); // TODO: proper post place signal
 };

@@ -87,13 +87,13 @@ Notebook.Delegator.prototype = {
         var target_selector = e.target.tagName.toLowerCase() + '.' + e.target.className;
         var target_group = self.targets[target_selector];
 
-        // console.log('delegating ' + target_selector + ' event to ' + 
-        //     group_element + ' specified by ' + target_group + ' ' + e.type
-        // )
+        console.log('delegating ' +  e.type  + 'event in '+ target_selector + ' to ' + 
+            target_group 
+        )
 
         if (target_group) {
             var group_element = $(e.target).parents(target_group);
-            
+            console.log('handler is ' + group_element)
             e.groupNode = group_element[0];
             e.mode = self.mode;
             var acts = self.groups[target_group][target_selector];
@@ -321,6 +321,7 @@ bracketRightDown.handler = function(e) {
 mainNullClick = new Notebook.ClickAction('nullclick');
 mainNullClick.type = 'mousedown';
 mainNullClick.handler = function(e) {
+    console.log('setting focus on ' + e.groupNode)
     Notebook.bracketSelector.deselectAll();
     e.groupNode.setFocus();
 };
