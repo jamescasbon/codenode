@@ -3723,13 +3723,13 @@ bespin.tiki.module("bespin:index",function(require,exports,module) {
 
 // BEGIN VERSION BLOCK
 /** The core version of the Bespin system */
-exports.versionNumber = '0.9a1';
+exports.versionNumber = 'tip';
 
 /** The version number to display to users */
-exports.versionCodename = 'Edison';
+exports.versionCodename = 'DEVELOPMENT MODE';
 
 /** The version number of the API (to ensure that the client and server are talking the same language) */
-exports.apiVersion = '4';
+exports.apiVersion = 'dev';
 
 // END VERSION BLOCK
 
@@ -6964,6 +6964,876 @@ exports.rectsEqual = function(r1, r2, delta) {
 };
 
 });
+;bespin.tiki.register("::settings", {
+    name: "settings",
+    dependencies: { "types": "0.0.0" }
+});
+bespin.tiki.module("settings:commands",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var catalog = require('bespin:plugins').catalog;
+var env = require('environment').env;
+
+var settings = require('settings').settings;
+
+/**
+ * 'set' command
+ */
+exports.setCommand = function(args, request) {
+    var html;
+
+    if (!args.setting) {
+        var settingsList = settings._list();
+        html = '';
+        // first sort the settingsList based on the key
+        settingsList.sort(function(a, b) {
+            if (a.key < b.key) {
+                return -1;
+            } else if (a.key == b.key) {
+                return 0;
+            } else {
+                return 1;
+            }
+        });
+
+        settingsList.forEach(function(setting) {
+            html += '<a class="setting" href="https://wiki.mozilla.org/Labs/Bespin/Settings#' +
+                    setting.key +
+                    '" title="View external documentation on setting: ' +
+                    setting.key +
+                    '" target="_blank">' +
+                    setting.key +
+                    '</a> = ' +
+                    setting.value +
+                    '<br/>';
+        });
+    } else {
+        if (args.value === undefined) {
+            html = '<strong>' + args.setting + '</strong> = ' + settings.get(args.setting);
+        } else {
+            html = 'Setting: <strong>' + args.setting + '</strong> = ' + args.value;
+            settings.set(args.setting, args.value);
+        }
+    }
+
+    request.done(html);
+};
+
+/**
+ * 'unset' command
+ */
+exports.unsetCommand = function(args, request) {
+    settings.resetValue(args.setting);
+    request.done('Reset ' + args.setting + ' to default: ' + settings.get(args.setting));
+};
+
+});
+
+bespin.tiki.module("settings:cookie",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var cookie = require('bespin:util/cookie');
+
+/**
+ * Save the settings in a cookie
+ * This code has not been tested since reboot
+ * @constructor
+ */
+exports.CookiePersister = function() {
+};
+
+exports.CookiePersister.prototype = {
+    loadInitialValues: function(settings) {
+        settings._loadDefaultValues().then(function() {
+            var data = cookie.get('settings');
+            settings._loadFromObject(JSON.parse(data));
+        }.bind(this));
+    },
+
+    persistValue: function(settings, key, value) {
+        try {
+            // Aggregate the settings into a file
+            var data = {};
+            settings._getSettingNames().forEach(function(key) {
+                data[key] = settings.get(key);
+            });
+
+            var stringData = JSON.stringify(data);
+            cookie.set('settings', stringData);
+        } catch (ex) {
+            console.error('Unable to JSONify the settings! ' + ex);
+            return;
+        }
+    }
+};
+
+});
+
+bespin.tiki.module("settings:index",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+/**
+ * This plug-in manages settings.
+ *
+ * <p>Some quick terminology: A _Choice_, is something that the application
+ * offers as a way to customize how it works. For each _Choice_ there will be
+ * a number of _Options_ but ultimately the user will have a _Setting_ for each
+ * _Choice_. This _Setting_ maybe the default for that _Choice_.
+ *
+ * <p>It provides an API for controlling the known settings. This allows us to
+ * provide better GUI/CLI support. See setting.js
+ * <p>It provides 3 implementations of a setting store:<ul>
+ * <li>MemorySettings: i.e. temporary, non-persistent. Useful in textarea
+ * replacement type scenarios. See memory.js
+ * <li>CookieSettings: Stores the data in a cookie. Generally not practical as
+ * it slows client server communication (if any). See cookie.js
+ * <li>ServerSettings: Stores data on a server using the <tt>server</tt> API.
+ * See server.js
+ * </ul>
+ * <p>It is expected that an HTML5 storage option will be developed soon. This
+ * plug-in did contain a prototype Gears implementation, however this was never
+ * maintained, and has been deleted due to bit-rot.
+ * <p>This plug-in also provides commands to manipulate the settings from the
+ * command_line and canon plug-ins.
+ *
+ * <p>TODO:<ul>
+ * <li>Check what happens when we alter settings from the UI
+ * <li>Ensure that values can be bound in a SC sense
+ * <li>Convert all subscriptions to bindings.
+ * <li>Implement HTML5 storage option
+ * <li>Make all settings have a 'description' member and use that in set|unset
+ * commands.
+ * <li>When the command system is re-worked to include more GUI interaction,
+ * expose data in settings to that system.
+ * </ul>
+ *
+ * <p>For future versions of the API it might be better to decrease the
+ * dependency on settings, and increase it on the system with a setting.
+ * e.g. Now:
+ * <pre>
+ * setting.addSetting({ name:'foo', ... });
+ * settings.set('foo', 'bar');
+ * </pre>
+ * <p>Vs the potentially better:
+ * <pre>
+ * var foo = setting.addSetting({ name:'foo', ... });
+ * foo.value = 'bar';
+ * </pre>
+ * <p>Comparison:
+ * <ul>
+ * <li>The latter version gains by forcing access to the setting to be through
+ * the plug-in providing it, so there wouldn't be any hidden dependencies.
+ * <li>It's also more compact.
+ * <li>It could provide access to to other methods e.g. <tt>foo.reset()</tt>
+ * and <tt>foo.onChange(function(val) {...});</tt> (but see SC binding)
+ * <li>On the other hand dependencies are so spread out right now that it's
+ * probably hard to do this easily. We should move to this in the future.
+ * </ul>
+ */
+
+var catalog = require('bespin:plugins').catalog;
+var console = require('bespin:console').console;
+var Promise = require('bespin:promise').Promise;
+var groupPromises = require('bespin:promise').group;
+
+var types = require('types:types');
+
+/**
+ * Find and configure the settings object.
+ * @see MemorySettings.addSetting()
+ */
+exports.addSetting = function(settingExt) {
+    require('settings').settings.addSetting(settingExt);
+};
+
+/**
+ * Fetch an array of the currently known settings
+ */
+exports.getSettings = function() {
+    return catalog.getExtensions('setting');
+};
+
+/**
+ * Something of a hack to allow the set command to give a clearer definition
+ * of the type to the command line.
+ */
+exports.getTypeSpecFromAssignment = function(typeSpec) {
+    var assignments = typeSpec.assignments;
+    var replacement = 'text';
+
+    if (assignments) {
+        // Find the assignment for 'setting' so we can get it's value
+        var settingAssignment = null;
+        assignments.forEach(function(assignment) {
+            if (assignment.param.name === 'setting') {
+                settingAssignment = assignment;
+            }
+        });
+
+        if (settingAssignment) {
+            var settingName = settingAssignment.value;
+            if (settingName && settingName !== '') {
+                var settingExt = catalog.getExtensionByKey('setting', settingName);
+                if (settingExt) {
+                    replacement = settingExt.type;
+                }
+            }
+        }
+    }
+
+    return replacement;
+};
+
+/**
+ * A base class for all the various methods of storing settings.
+ * <p>Usage:
+ * <pre>
+ * // Create manually, or require 'settings' from the container.
+ * // This is the manual version:
+ * var settings = require('bespin:plugins').catalog.getObject('settings');
+ * // Add a new setting
+ * settings.addSetting({ name:'foo', ... });
+ * // Display the default value
+ * alert(settings.get('foo'));
+ * // Alter the value, which also publishes the change etc.
+ * settings.set('foo', 'bar');
+ * // Reset the value to the default
+ * settings.resetValue('foo');
+ * </pre>
+ * @class
+ */
+exports.MemorySettings = function() {
+};
+
+exports.MemorySettings.prototype = {
+    /**
+     * Storage for the setting values
+     */
+    _values: {},
+
+    /**
+     * Storage for deactivated values
+     */
+    _deactivated: {},
+
+    /**
+     * A Persister is able to store settings. It is an object that defines
+     * two functions:
+     * loadInitialValues(settings) and persistValue(settings, key, value).
+     */
+    setPersister: function(persister) {
+        this._persister = persister;
+        if (persister) {
+            persister.loadInitialValues(this);
+        }
+    },
+
+    /**
+     * Read accessor
+     */
+    get: function(key) {
+        return this._values[key];
+    },
+
+    /**
+     * Override observable.set(key, value) to provide type conversion and
+     * validation.
+     */
+    set: function(key, value) {
+        var settingExt = catalog.getExtensionByKey('setting', key);
+        if (!settingExt) {
+            // If there is no definition for this setting, then warn the user
+            // and store the setting in raw format. If the setting gets defined,
+            // the addSetting() function is called which then takes up the
+            // here stored setting and calls set() to convert the setting.
+            console.warn('Setting not defined: ', key, value);
+            this._deactivated[key] = value;
+        }
+        else if (typeof value == 'string' && settingExt.type == 'string') {
+            // no conversion needed
+            this._values[key] = value;
+        }
+        else {
+            var inline = false;
+
+            types.fromString(value, settingExt.type).then(function(converted) {
+                inline = true;
+                this._values[key] = converted;
+
+                // Inform subscriptions of the change
+                catalog.publish(this, 'settingChange', key, converted);
+            }.bind(this), function(ex) {
+                console.error('Error setting', key, ': ', ex);
+            });
+
+            if (!inline) {
+                console.warn('About to set string version of ', key, 'delaying typed set.');
+                this._values[key] = value;
+            }
+        }
+
+        this._persistValue(key, value);
+        return this;
+    },
+
+    /**
+     * Function to add to the list of available settings.
+     * <p>Example usage:
+     * <pre>
+     * var settings = require('bespin:plugins').catalog.getObject('settings');
+     * settings.addSetting({
+     *     name: 'tabsize', // For use in settings.get('X')
+     *     type: 'number',  // To allow value checking.
+     *     defaultValue: 4  // Default value for use when none is directly set
+     * });
+     * </pre>
+     * @param {object} settingExt Object containing name/type/defaultValue members.
+     */
+    addSetting: function(settingExt) {
+        if (!settingExt.name) {
+            console.error('Setting.name == undefined. Ignoring.', settingExt);
+            return;
+        }
+
+        if (!settingExt.defaultValue === undefined) {
+            console.error('Setting.defaultValue == undefined', settingExt);
+        }
+
+        types.isValid(settingExt.defaultValue, settingExt.type).then(function(valid) {
+            if (!valid) {
+                console.warn('!Setting.isValid(Setting.defaultValue)', settingExt);
+            }
+
+            // The value can be
+            // 1) the value of a setting that is not activated at the moment
+            //       OR
+            // 2) the defaultValue of the setting.
+            var value = this._deactivated[settingExt.name] ||
+                    settingExt.defaultValue;
+
+            // Set the default value up.
+            this.set(settingExt.name, value);
+        }.bind(this), function(ex) {
+            console.error('Type error ', ex, ' ignoring setting ', settingExt);
+        });
+    },
+
+    /**
+     * Reset the value of the <code>key</code> setting to it's default
+     */
+    resetValue: function(key) {
+        var settingExt = catalog.getExtensionByKey('setting', key);
+        if (settingExt) {
+            this.set(key, settingExt.defaultValue);
+        } else {
+            console.log('ignore resetValue on ', key);
+        }
+    },
+
+    resetAll: function() {
+        this._getSettingNames().forEach(function(key) {
+            this.resetValue(key);
+        }.bind(this));
+    },
+
+    /**
+     * Make a list of the valid type names
+     */
+    _getSettingNames: function() {
+        var typeNames = [];
+        catalog.getExtensions('setting').forEach(function(settingExt) {
+            typeNames.push(settingExt.name);
+        });
+        return typeNames;
+    },
+
+    /**
+     * Retrieve a list of the known settings and their values
+     */
+    _list: function() {
+        var reply = [];
+        this._getSettingNames().forEach(function(setting) {
+            reply.push({
+                'key': setting,
+                'value': this.get(setting)
+            });
+        }.bind(this));
+        return reply;
+    },
+
+    /**
+     * delegates to the persister. no-op if there's no persister.
+     */
+    _persistValue: function(key, value) {
+        var persister = this._persister;
+        if (persister) {
+            persister.persistValue(this, key, value);
+        }
+    },
+
+    /**
+     * Delegates to the persister, otherwise sets up the defaults if no
+     * persister is available.
+     */
+    _loadInitialValues: function() {
+        var persister = this._persister;
+        if (persister) {
+            persister.loadInitialValues(this);
+        } else {
+            this._loadDefaultValues();
+        }
+    },
+
+    /**
+     * Prime the local cache with the defaults.
+     */
+    _loadDefaultValues: function() {
+        return this._loadFromObject(this._defaultValues());
+    },
+
+    /**
+     * Utility to load settings from an object
+     */
+    _loadFromObject: function(data) {
+        var promises = [];
+        // take the promise action out of the loop to avoid closure problems
+        var setterFactory = function(keyName) {
+            return function(value) {
+                this.set(keyName, value);
+            };
+        };
+
+        for (var key in data) {
+            if (data.hasOwnProperty(key)) {
+                var valueStr = data[key];
+                var settingExt = catalog.getExtensionByKey('setting', key);
+                if (settingExt) {
+                    // TODO: We shouldn't just ignore values without a setting
+                    var promise = types.fromString(valueStr, settingExt.type);
+                    var setter = setterFactory(key);
+                    promise.then(setter);
+                    promises.push(promise);
+                }
+            }
+        }
+
+        // Promise.group (a.k.a groupPromises) gives you a list of all the data
+        // in the grouped promises. We don't want that in case we change how
+        // this works with ignored settings (see above).
+        // So we do this to hide the list of promise resolutions.
+        var replyPromise = new Promise();
+        groupPromises(promises).then(function() {
+            replyPromise.resolve();
+        });
+        return replyPromise;
+    },
+
+    /**
+     * Utility to grab all the settings and export them into an object
+     */
+    _saveToObject: function() {
+        var promises = [];
+        var reply = {};
+
+        this._getSettingNames().forEach(function(key) {
+            var value = this.get(key);
+            var settingExt = catalog.getExtensionByKey('setting', key);
+            if (settingExt) {
+                // TODO: We shouldn't just ignore values without a setting
+                var promise = types.toString(value, settingExt.type);
+                promise.then(function(value) {
+                    reply[key] = value;
+                });
+                promises.push(promise);
+            }
+        }.bind(this));
+
+        var replyPromise = new Promise();
+        groupPromises(promises).then(function() {
+            replyPromise.resolve(reply);
+        });
+        return replyPromise;
+    },
+
+    /**
+     * The default initial settings
+     */
+    _defaultValues: function() {
+        var defaultValues = {};
+        catalog.getExtensions('setting').forEach(function(settingExt) {
+            defaultValues[settingExt.name] = settingExt.defaultValue;
+        });
+        return defaultValues;
+    }
+};
+
+exports.settings = new exports.MemorySettings();
+
+});
+;bespin.tiki.register("::canon", {
+    name: "canon",
+    dependencies: { "environment": "0.0.0", "events": "0.0.0", "settings": "0.0.0" }
+});
+bespin.tiki.module("canon:history",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var Trace = require('bespin:util/stacktrace').Trace;
+var catalog = require('bespin:plugins').catalog;
+
+/**
+ * Current requirements are around displaying the command line, and provision
+ * of a 'history' command and cursor up|down navigation of history.
+ * <p>Future requirements could include:
+ * <ul>
+ * <li>Multiple command lines
+ * <li>The ability to recall key presses (i.e. requests with no output) which
+ * will likely be needed for macro recording or similar
+ * <li>The ability to store the command history either on the server or in the
+ * browser local storage.
+ * </ul>
+ * <p>The execute() command doesn't really live here, except as part of that
+ * last future requirement, and because it doesn't really have anywhere else to
+ * live.
+ */
+
+/**
+ * The array of requests that wish to announce their presence
+ */
+exports.requests = [];
+
+/**
+ * How many requests do we store?
+ */
+var maxRequestLength = 100;
+
+/**
+ * Called by Request instances when some output (or a cell to async() happens)
+ */
+exports.addRequestOutput = function(request) {
+    exports.requests.push(request);
+    // This could probably be optimized with some maths, but 99.99% of the
+    // time we will only be off by one, and I'm feeling lazy.
+    while (exports.requests.length > maxRequestLength) {
+        exports.requests.shiftObject();
+    }
+
+    catalog.publish(this, 'addedRequestOutput', null, request);
+};
+
+/**
+ * Execute a new command.
+ * This is basically an error trapping wrapper around request.command(...)
+ */
+exports.execute = function(args, request) {
+    // Check the function pointed to in the meta-data exists
+    if (!request.command) {
+        request.doneWithError('Command not found.');
+        return;
+    }
+
+    try {
+        request.command(args, request);
+    } catch (ex) {
+        var trace = new Trace(ex, true);
+        console.group('Error executing command \'' + request.typed + '\'');
+        console.log('command=', request.commandExt);
+        console.log('args=', args);
+        console.error(ex);
+        trace.log(3);
+        console.groupEnd();
+
+        request.doneWithError(ex);
+    }
+};
+
+});
+
+bespin.tiki.module("canon:request",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var Event = require('events').Event;
+var history = require('canon:history');
+
+/**
+ * To create an invocation, you need to do something like this (all the ctor
+ * args are optional):
+ * <pre>
+ * var request = new Request({
+ *     command: command,
+ *     commandExt: commandExt,
+ *     args: args,
+ *     typed: typed
+ * });
+ * </pre>
+ */
+exports.Request = function(options) {
+    options = options || {};
+
+    // Will be used in the keyboard case and the cli case
+    this.command = options.command;
+    this.commandExt = options.commandExt;
+
+    // Will be used only in the cli case
+    this.args = options.args;
+    this.typed = options.typed;
+
+    // Have we been initialized?
+    this._begunOutput = false;
+
+    this.start = new Date();
+    this.end = null;
+    this.completed = false;
+    this.error = false;
+
+    this.changed = new Event();
+};
+
+/**
+ * Lazy init to register with the history should only be done on output.
+ * init() is expensive, and won't be used in the majority of cases
+ */
+exports.Request.prototype._beginOutput = function() {
+    this._begunOutput = true;
+    this.outputs = [];
+
+    history.addRequestOutput(this);
+};
+
+/**
+ * Sugar for:
+ * <pre>request.error = true; request.done(output);</pre>
+ */
+exports.Request.prototype.doneWithError = function(content) {
+    this.error = true;
+    this.done(content);
+};
+
+/**
+ * Declares that this function will not be automatically done when
+ * the command exits
+ */
+exports.Request.prototype.async = function() {
+    if (!this._begunOutput) {
+        this._beginOutput();
+    }
+};
+
+/**
+ * Complete the currently executing command with successful output.
+ * @param output Either DOM node, an SproutCore element or something that
+ * can be used in the content of a DIV to create a DOM node.
+ */
+exports.Request.prototype.output = function(content) {
+    if (!this._begunOutput) {
+        this._beginOutput();
+    }
+
+    if (typeof content !== 'string' && !(content instanceof Node)) {
+        content = content.toString();
+    }
+
+    this.outputs.push(content);
+    this.changed();
+
+    return this;
+};
+
+/**
+ * All commands that do output must call this to indicate that the command
+ * has finished execution.
+ */
+exports.Request.prototype.done = function(content) {
+    this.completed = true;
+    this.end = new Date();
+    this.duration = this.end.getTime() - this.start.getTime();
+
+    if (content) {
+        this.output(content);
+    } else {
+        this.changed();
+    }
+};
+
+});
+
+bespin.tiki.module("canon:index",function(require,exports,module) {
+
+});
 ;bespin.tiki.register("::syntax_directory", {
     name: "syntax_directory",
     dependencies: {  }
@@ -7069,6 +7939,834 @@ function discoveredNewSyntax(syntaxExtension) {
 
 exports.syntaxDirectory = syntaxDirectory;
 exports.discoveredNewSyntax = discoveredNewSyntax;
+
+
+});
+;bespin.tiki.register("::environment", {
+    name: "environment",
+    dependencies: { "settings": "0.0.0" }
+});
+bespin.tiki.module("environment:index",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+"define metadata";
+({
+    "dependencies": {
+        "settings": "0.0.0"
+    }
+});
+"end";
+
+var util = require('bespin:util/util');
+var console = require('bespin:console').console;
+var catalog = require("bespin:plugins").catalog;
+var settings = require('settings').settings;
+
+/**
+ * The environment plays a similar role to the environment under unix.
+ * Bespin does not currently have a concept of variables, (i.e. things the user
+ * directly changes, however it does have a number of pre-defined things that
+ * are changed by the system.
+ * <p>The role of the Environment is likely to be expanded over time.
+ */
+exports.Environment = function() {
+    // The current command line pushes this value into here
+    this.commandLine = null;
+
+    // Fire the sizeChanged event when the window is resized.
+    window.addEventListener('resize', this.dimensionsChanged.bind(this), false);
+};
+
+Object.defineProperties(exports.Environment.prototype, {
+
+    /**
+     * Provides a get() and set() function to set and get settings.
+     */
+    settings: {
+        value: {
+            set: function(key, value) {
+                if (util.none(key)) {
+                    throw new Error('setSetting(): key must be supplied');
+                }
+                if (util.none(value)) {
+                    throw new Error('setSetting(): value must be supplied');
+                }
+
+                settings.set(key, value);
+            },
+            
+            get: function(key) {
+                if (util.none(key)) {
+                    throw new Error('getSetting(): key must be supplied');
+                }
+                return settings.get(key);
+            }
+        }
+    },
+
+    dimensionsChanged: {
+        value: function() {
+            catalog.publish(this, 'dimensionsChanged');
+        }
+    },
+
+    /**
+     * Retrieves the EditSession
+     */
+    session: {
+        get: function() {
+            return catalog.getObject('session');
+        }
+    },
+
+    /**
+     * Gets the currentView from the session.
+     */
+    view: {
+        get: function() {
+            if (!this.session) {
+                // This can happen if the session is being reloaded.
+                return null;
+            }
+            return this.session.currentView;
+        }
+    },
+
+    /**
+     * Gets the currentEditor from the session.
+     */
+    editor: {
+        get: function() {
+            if (!this.session) {
+                // This can happen if the session is being reloaded.
+                return null;
+            }
+            return this.session.currentView.editor;
+        }
+    },
+
+    /**
+     * Returns the currently-active syntax contexts.
+     */
+    contexts: {
+        get: function() {
+            // when editorapp is being refreshed, the textView is not available.
+            if (!this.view) {
+                return [];
+            }
+
+            var syntaxManager = this.view.editor.layoutManager.syntaxManager;
+            var pos = this.view.getSelectedRange().start;
+            return syntaxManager.contextsAtPosition(pos);
+        }
+    },
+
+    /**
+     * The current Buffer from the session
+     */
+    buffer: {
+        get: function() {
+            if (!this.session) {
+                console.error("command attempted to get buffer but there's no session");
+                return undefined;
+            }
+            return this.view.editor.buffer;
+        }
+    },
+
+    /**
+     * The current editor model might not always be easy to find so you should
+     * use <code>instruction.model</code> to access the view where
+     * possible.
+     */
+    model: {
+        get: function() {
+            if (!this.buffer) {
+                console.error('Session has no current buffer');
+                return undefined;
+            }
+            return this.view.editor.layoutManager.textStorage;
+        }
+    },
+
+    /**
+     * gets the current file from the session
+     */
+    file: {
+        get: function() {
+            if (!this.buffer) {
+                console.error('Session has no current buffer');
+                return undefined;
+            }
+            return this.buffer.file;
+        }
+    },
+
+    /**
+     * If files are available, this will get them. Perhaps we need some other
+     * mechanism for populating these things from the catalog?
+     */
+    files: {
+        get: function() {
+            return catalog.getObject('files');
+        }
+    }
+});
+
+/**
+ * The global environment used throughout this Bespin instance.
+ */
+exports.env = new exports.Environment();
+
+});
+;bespin.tiki.register("::traits", {
+    name: "traits",
+    dependencies: {  }
+});
+bespin.tiki.module("traits:index",function(require,exports,module) {
+// Copyright (C) 2010 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// See http://code.google.com/p/es-lab/wiki/Traits
+// for background on traits and a description of this library
+
+"define metadata";
+({
+    "description": "Traits library, traitsjs.org",
+    "dependencies": {},
+    "provides": []
+});
+"end";
+
+// --- Begin traits-0.1.js ---
+
+exports.Trait = (function(){
+
+  // == Ancillary functions ==
+  
+  // this signals that the current ES implementation supports properties,
+  // so probably also accessor properties
+  var SUPPORTS_DEFINEPROP = !!Object.defineProperty;
+
+  var call = Function.prototype.call;
+
+  /**
+   * An ad hoc version of bind that only binds the 'this' parameter.
+   */
+  var bindThis = Function.prototype.bind
+    ? function(fun, self) { return Function.prototype.bind.call(fun, self); }
+    : function(fun, self) {
+        function funcBound(var_args) {
+          return fun.apply(self, arguments);
+        }
+        return funcBound;
+      };
+
+  var hasOwnProperty = bindThis(call, Object.prototype.hasOwnProperty);
+  var slice = bindThis(call, Array.prototype.slice);
+    
+  // feature testing such that traits.js runs on both ES3 and ES5
+  var forEach = Array.prototype.forEach
+      ? bindThis(call, Array.prototype.forEach)
+      : function(arr, fun) {
+          for (var i = 0, len = arr.length; i < len; i++) { fun(arr[i]); }
+        };
+      
+  var freeze = Object.freeze || function(obj) { return obj; };
+  var getPrototypeOf = Object.getPrototypeOf || function(obj) { return Object.prototype };
+  var getOwnPropertyNames = Object.getOwnPropertyNames ||
+      function(obj) {
+        var props = [];
+        for (var p in obj) { if (hasOwnProperty(obj,p)) { props.push(p); } }
+        return props;
+      };
+  var getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor ||
+      function(obj, name) {
+        return {
+          value: obj[name],
+          enumerable: true,
+          writable: true,
+          configurable: true
+        };
+      };
+  var defineProperty = Object.defineProperty ||
+      function(obj, name, pd) {
+        obj[name] = pd.value;
+      };
+  var defineProperties = Object.defineProperties ||
+      function(obj, propMap) {
+        for (var name in propMap) {
+          if (hasOwnProperty(propMap, name)) {
+            defineProperty(obj, name, propMap[name]);
+          }
+        }
+      };
+  var Object_create = Object.create ||
+      function(proto, propMap) {
+        var self;
+        function dummy() {};
+        dummy.prototype = proto || Object.prototype;
+        self = new dummy();
+        if (propMap) {
+          defineProperties(self, propMap);          
+        }
+        return self;
+      };
+  var getOwnProperties = Object.getOwnProperties ||
+      function(obj) {
+        var map = {};
+        forEach(getOwnPropertyNames(obj), function (name) {
+          map[name] = getOwnPropertyDescriptor(obj, name);
+        });
+        return map;
+      };
+  
+  // end of ES3 - ES5 compatibility functions
+  
+  function makeConflictAccessor(name) {
+    var accessor = function(var_args) {
+      throw new Error("Conflicting property: "+name);
+    };
+    freeze(accessor.prototype);
+    return freeze(accessor);
+  };
+
+  function makeRequiredPropDesc(name) {
+    return freeze({
+      value: undefined,
+      enumerable: false,
+      required: true
+    });
+  }
+  
+  function makeConflictingPropDesc(name) {
+    var conflict = makeConflictAccessor(name);
+    if (SUPPORTS_DEFINEPROP) {
+      return freeze({
+       get: conflict,
+       set: conflict,
+       enumerable: false,
+       conflict: true
+      }); 
+    } else {
+      return freeze({
+        value: conflict,
+        enumerable: false,
+        conflict: true
+      });
+    }
+  }
+  
+  /**
+   * Are x and y not observably distinguishable?
+   */
+  function identical(x, y) {
+    if (x === y) {
+      // 0 === -0, but they are not identical
+      return x !== 0 || 1/x === 1/y;
+    } else {
+      // NaN !== NaN, but they are identical.
+      // NaNs are the only non-reflexive value, i.e., if x !== x,
+      // then x is a NaN.
+      return x !== x && y !== y;
+    }
+  }
+
+  // Note: isSameDesc should return true if both
+  // desc1 and desc2 represent a 'required' property
+  // (otherwise two composed required properties would be turned into a conflict)
+  function isSameDesc(desc1, desc2) {
+    // for conflicting properties, don't compare values because
+    // the conflicting property values are never equal
+    if (desc1.conflict && desc2.conflict) {
+      return true;
+    } else {
+      return (   desc1.get === desc2.get
+              && desc1.set === desc2.set
+              && identical(desc1.value, desc2.value)
+              && desc1.enumerable === desc2.enumerable
+              && desc1.required === desc2.required
+              && desc1.conflict === desc2.conflict); 
+    }
+  }
+  
+  function freezeAndBind(meth, self) {
+    return freeze(bindThis(meth, self));
+  }
+
+  /* makeSet(['foo', ...]) => { foo: true, ...}
+   *
+   * makeSet returns an object whose own properties represent a set.
+   *
+   * Each string in the names array is added to the set.
+   *
+   * To test whether an element is in the set, perform:
+   *   hasOwnProperty(set, element)
+   */
+  function makeSet(names) {
+    var set = {};
+    forEach(names, function (name) {
+      set[name] = true;
+    });
+    return freeze(set);
+  }
+
+  // == singleton object to be used as the placeholder for a required property ==
+  
+  var required = freeze({ toString: function() { return '<Trait.required>'; } });
+
+  // == The public API methods ==
+
+  /**
+   * var newTrait = trait({ foo:required, ... })
+   *
+   * @param object an object record (in principle an object literal)
+   * @returns a new trait describing all of the own properties of the object
+   *          (both enumerable and non-enumerable)
+   *
+   * As a general rule, 'trait' should be invoked with an
+   * object literal, since the object merely serves as a record
+   * descriptor. Both its identity and its prototype chain are irrelevant.
+   * 
+   * Data properties bound to function objects in the argument will be flagged
+   * as 'method' properties. The prototype of these function objects is frozen.
+   * 
+   * Data properties bound to the 'required' singleton exported by this module
+   * will be marked as 'required' properties.
+   *
+   * The <tt>trait</tt> function is pure if no other code can witness the
+   * side-effects of freezing the prototypes of the methods. If <tt>trait</tt>
+   * is invoked with an object literal whose methods are represented as
+   * in-place anonymous functions, this should normally be the case.
+   */
+  function trait(obj) {
+    var map = {};
+    forEach(getOwnPropertyNames(obj), function (name) {
+      var pd = getOwnPropertyDescriptor(obj, name);
+      if (pd.value === required) {
+        pd = makeRequiredPropDesc(name);
+      } else if (typeof pd.value === 'function') {
+        pd.method = true;
+        if ('prototype' in pd.value) {
+          freeze(pd.value.prototype);
+        }
+      } else {
+        if (pd.get && pd.get.prototype) { freeze(pd.get.prototype); }
+        if (pd.set && pd.set.prototype) { freeze(pd.set.prototype); }
+      }
+      map[name] = pd;
+    });
+    return map;
+  }
+
+  /**
+   * var newTrait = compose(trait_1, trait_2, ..., trait_N)
+   *
+   * @param trait_i a trait object
+   * @returns a new trait containing the combined own properties of
+   *          all the trait_i.
+   * 
+   * If two or more traits have own properties with the same name, the new
+   * trait will contain a 'conflict' property for that name. 'compose' is
+   * a commutative and associative operation, and the order of its
+   * arguments is not significant.
+   *
+   * If 'compose' is invoked with < 2 arguments, then:
+   *   compose(trait_1) returns a trait equivalent to trait_1
+   *   compose() returns an empty trait
+   */
+  function compose(var_args) {
+    var traits = slice(arguments, 0);
+    var newTrait = {};
+    
+    forEach(traits, function (trait) {
+      forEach(getOwnPropertyNames(trait), function (name) {
+        var pd = trait[name];
+        if (hasOwnProperty(newTrait, name) &&
+            !newTrait[name].required) {
+          
+          // a non-required property with the same name was previously defined
+          // this is not a conflict if pd represents a 'required' property itself:
+          if (pd.required) {
+            return; // skip this property, the required property is now present
+          }
+            
+          if (!isSameDesc(newTrait[name], pd)) {
+            // a distinct, non-required property with the same name
+            // was previously defined by another trait => mark as conflicting property
+            newTrait[name] = makeConflictingPropDesc(name); 
+          } // else,
+          // properties are not in conflict if they refer to the same value
+          
+        } else {
+          newTrait[name] = pd;
+        }
+      });
+    });
+    
+    return freeze(newTrait);
+  }
+
+  /* var newTrait = exclude(['name', ...], trait)
+   *
+   * @param names a list of strings denoting property names.
+   * @param trait a trait some properties of which should be excluded.
+   * @returns a new trait with the same own properties as the original trait,
+   *          except that all property names appearing in the first argument
+   *          are replaced by required property descriptors.
+   *
+   * Note: exclude(A, exclude(B,t)) is equivalent to exclude(A U B, t)
+   */
+  function exclude(names, trait) {
+    var exclusions = makeSet(names);
+    var newTrait = {};
+    
+    forEach(getOwnPropertyNames(trait), function (name) {
+      // required properties are not excluded but ignored
+      if (!hasOwnProperty(exclusions, name) || trait[name].required) {
+        newTrait[name] = trait[name];
+      } else {
+        // excluded properties are replaced by required properties
+        newTrait[name] = makeRequiredPropDesc(name);
+      }
+    });
+    
+    return freeze(newTrait);
+  }
+
+  /**
+   * var newTrait = override(trait_1, trait_2, ..., trait_N)
+   *
+   * @returns a new trait with all of the combined properties of the argument traits.
+   *          In contrast to 'compose', 'override' immediately resolves all conflicts
+   *          resulting from this composition by overriding the properties of later
+   *          traits. Trait priority is from left to right. I.e. the properties of the
+   *          leftmost trait are never overridden.
+   *
+   *  override is associative:
+   *    override(t1,t2,t3) is equivalent to override(t1, override(t2, t3)) or
+   *    to override(override(t1, t2), t3)
+   *  override is not commutative: override(t1,t2) is not equivalent to override(t2,t1)
+   *
+   * override() returns an empty trait
+   * override(trait_1) returns a trait equivalent to trait_1
+   */
+  function override(var_args) {
+    var traits = slice(arguments, 0);
+    var newTrait = {};
+    forEach(traits, function (trait) {
+      forEach(getOwnPropertyNames(trait), function (name) {
+        var pd = trait[name];
+        // add this trait's property to the composite trait only if
+        // - the trait does not yet have this property
+        // - or, the trait does have the property, but it's a required property
+        if (!hasOwnProperty(newTrait, name) || newTrait[name].required) {
+          newTrait[name] = pd;
+        }
+      });
+    });
+    return freeze(newTrait);
+  }
+  
+  /**
+   * var newTrait = override(dominantTrait, recessiveTrait)
+   *
+   * @returns a new trait with all of the properties of dominantTrait
+   *          and all of the properties of recessiveTrait not in dominantTrait
+   *
+   * Note: override is associative:
+   *   override(t1, override(t2, t3)) is equivalent to override(override(t1, t2), t3)
+   */
+  /*function override(frontT, backT) {
+    var newTrait = {};
+    // first copy all of backT's properties into newTrait
+    forEach(getOwnPropertyNames(backT), function (name) {
+      newTrait[name] = backT[name];
+    });
+    // now override all these properties with frontT's properties
+    forEach(getOwnPropertyNames(frontT), function (name) {
+      var pd = frontT[name];
+      // frontT's required property does not override the provided property
+      if (!(pd.required && hasOwnProperty(newTrait, name))) {
+        newTrait[name] = pd; 
+      }      
+    });
+    
+    return freeze(newTrait);
+  }*/
+
+  /**
+   * var newTrait = rename(map, trait)
+   *
+   * @param map an object whose own properties serve as a mapping from
+            old names to new names.
+   * @param trait a trait object
+   * @returns a new trait with the same properties as the original trait,
+   *          except that all properties whose name is an own property
+   *          of map will be renamed to map[name], and a 'required' property
+   *          for name will be added instead.
+   *
+   * rename({a: 'b'}, t) eqv compose(exclude(['a'],t),
+   *                                 { a: { required: true },
+   *                                   b: t[a] })
+   *
+   * For each renamed property, a required property is generated.
+   * If the map renames two properties to the same name, a conflict is generated.
+   * If the map renames a property to an existing unrenamed property, a conflict is generated.
+   *
+   * Note: rename(A, rename(B, t)) is equivalent to rename(\n -> A(B(n)), t)
+   * Note: rename({...},exclude([...], t)) is not eqv to exclude([...],rename({...}, t))
+   */
+  function rename(map, trait) {
+    var renamedTrait = {};
+    forEach(getOwnPropertyNames(trait), function (name) {
+      // required props are never renamed
+      if (hasOwnProperty(map, name) && !trait[name].required) {
+        var alias = map[name]; // alias defined in map
+        if (hasOwnProperty(renamedTrait, alias) && !renamedTrait[alias].required) {
+          // could happen if 2 props are mapped to the same alias
+          renamedTrait[alias] = makeConflictingPropDesc(alias);
+        } else {
+          // add the property under an alias
+          renamedTrait[alias] = trait[name];
+        }
+        // add a required property under the original name
+        // but only if a property under the original name does not exist
+        // such a prop could exist if an earlier prop in the trait was previously
+        // aliased to this name
+        if (!hasOwnProperty(renamedTrait, name)) {
+          renamedTrait[name] = makeRequiredPropDesc(name);     
+        }
+      } else { // no alias defined
+        if (hasOwnProperty(renamedTrait, name)) {
+          // could happen if another prop was previously aliased to name
+          if (!trait[name].required) {
+            renamedTrait[name] = makeConflictingPropDesc(name);            
+          }
+          // else required property overridden by a previously aliased property
+          // and otherwise ignored
+        } else {
+          renamedTrait[name] = trait[name];
+        }
+      }
+    });
+    
+    return freeze(renamedTrait);
+  }
+  
+  /**
+   * var newTrait = resolve({ oldName: 'newName', excludeName: undefined, ... }, trait)
+   *
+   * This is a convenience function combining renaming and exclusion. It can be implemented
+   * as <tt>rename(map, exclude(exclusions, trait))</tt> where map is the subset of
+   * mappings from oldName to newName and exclusions is an array of all the keys that map
+   * to undefined (or another falsy value).
+   *
+   * @param resolutions an object whose own properties serve as a mapping from
+            old names to new names, or to undefined if the property should be excluded
+   * @param trait a trait object
+   * @returns a resolved trait with the same own properties as the original trait.
+   *
+   * In a resolved trait, all own properties whose name is an own property
+   * of resolutions will be renamed to resolutions[name] if it is truthy,
+   * or their value is changed into a required property descriptor if
+   * resolutions[name] is falsy.
+   *
+   * Note, it's important to _first_ exclude, _then_ rename, since exclude
+   * and rename are not associative, for example:
+   * rename({a: 'b'}, exclude(['b'], trait({ a:1,b:2 }))) eqv trait({b:1})
+   * exclude(['b'], rename({a: 'b'}, trait({ a:1,b:2 }))) eqv trait({b:Trait.required})
+   *
+   * writing resolve({a:'b', b: undefined},trait({a:1,b:2})) makes it clear that
+   * what is meant is to simply drop the old 'b' and rename 'a' to 'b'
+   */
+  function resolve(resolutions, trait) {
+    var renames = {};
+    var exclusions = [];
+    // preprocess renamed and excluded properties
+    for (var name in resolutions) {
+      if (hasOwnProperty(resolutions, name)) {
+        if (resolutions[name]) { // old name -> new name
+          renames[name] = resolutions[name];
+        } else { // name -> undefined
+          exclusions.push(name);
+        }
+      }
+    }
+    return rename(renames, exclude(exclusions, trait));
+  }
+
+  /**
+   * var obj = create(proto, trait)
+   *
+   * @param proto denotes the prototype of the completed object
+   * @param trait a trait object to be turned into a complete object
+   * @returns an object with all of the properties described by the trait.
+   * @throws 'Missing required property' the trait still contains a required property.
+   * @throws 'Remaining conflicting property' if the trait still contains a conflicting property.
+   *
+   * Trait.create is like Object.create, except that it generates
+   * high-integrity or final objects. In addition to creating a new object
+   * from a trait, it also ensures that:
+   *    - an exception is thrown if 'trait' still contains required properties
+   *    - an exception is thrown if 'trait' still contains conflicting properties
+   *    - the object is and all of its accessor and method properties are frozen
+   *    - the 'this' pseudovariable in all accessors and methods of the object is
+   *      bound to the composed object.
+   *
+   *  Use Object.create instead of Trait.create if you want to create
+   *  abstract or malleable objects. Keep in mind that for such objects:
+   *    - no exception is thrown if 'trait' still contains required properties
+   *      (the properties are simply dropped from the composite object)
+   *    - no exception is thrown if 'trait' still contains conflicting properties
+   *      (these properties remain as conflicting properties in the composite object)
+   *    - neither the object nor its accessor and method properties are frozen
+   *    - the 'this' pseudovariable in all accessors and methods of the object is
+   *      left unbound.
+   */
+  function create(proto, trait) {
+    var self = Object_create(proto);
+    var properties = {};
+  
+    forEach(getOwnPropertyNames(trait), function (name) {
+      var pd = trait[name];
+      // check for remaining 'required' properties
+      // Note: it's OK for the prototype to provide the properties
+      if (pd.required && !(name in proto)) {
+        throw new Error('Missing required property: '+name);
+      } else if (pd.conflict) { // check for remaining conflicting properties
+        throw new Error('Remaining conflicting property: '+name);
+      } else if ('value' in pd) { // data property
+        // freeze all function properties and their prototype
+        if (pd.method) { // the property is meant to be used as a method
+          // bind 'this' in trait method to the composite object
+          properties[name] = {
+            value: freezeAndBind(pd.value, self),
+            enumerable: pd.enumerable,
+            configurable: pd.configurable,
+            writable: pd.writable
+          };
+        } else {
+          properties[name] = pd;
+        }
+      } else { // accessor property
+        properties[name] = {
+          get: pd.get ? freezeAndBind(pd.get, self) : undefined,
+          set: pd.set ? freezeAndBind(pd.set, self) : undefined,
+          enumerable: pd.enumerable,
+          configurable: pd.configurable,
+          writable: pd.writable            
+        };
+      }
+    });
+
+    defineProperties(self, properties);
+    return freeze(self);
+  }
+
+  /** A shorthand for create(Object.prototype, trait({...}), options) */
+  function object(record, options) {
+    return create(Object.prototype, trait(record), options);
+  }
+
+  /**
+   * Tests whether two traits are equivalent. T1 is equivalent to T2 iff
+   * both describe the same set of property names and for all property
+   * names n, T1[n] is equivalent to T2[n]. Two property descriptors are
+   * equivalent if they have the same value, accessors and attributes.
+   *
+   * @return a boolean indicating whether the two argument traits are equivalent.
+   */
+  function eqv(trait1, trait2) {
+    var names1 = getOwnPropertyNames(trait1);
+    var names2 = getOwnPropertyNames(trait2);
+    var name;
+    if (names1.length !== names2.length) {
+      return false;
+    }
+    for (var i = 0; i < names1.length; i++) {
+      name = names1[i];
+      if (!trait2[name] || !isSameDesc(trait1[name], trait2[name])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  // if this code is ran in ES3 without an Object.create function, this
+  // library will define it on Object:
+  if (!Object.create) {
+    Object.create = Object_create;
+  }
+  // ES5 does not by default provide Object.getOwnProperties
+  // if it's not defined, the Traits library defines this utility function on Object
+  if(!Object.getOwnProperties) {
+    Object.getOwnProperties = getOwnProperties;
+  }
+  
+  // expose the public API of this module
+  function Trait(record) {
+    // calling Trait as a function creates a new atomic trait
+    return trait(record);
+  }
+  Trait.required = freeze(required);
+  Trait.compose = freeze(compose);
+  Trait.resolve = freeze(resolve);
+  Trait.override = freeze(override);
+  Trait.create = freeze(create);
+  Trait.eqv = freeze(eqv);
+  Trait.object = freeze(object); // not essential, cf. create + trait
+  return freeze(Trait);
+  
+})();
+
+// --- End traits-0.1.js ---
 
 
 });
@@ -7780,8 +9478,1164 @@ bespin.tiki.module("underscore:index",function(require,exports,module) {
 
 exports._.noConflict();
 });
+;bespin.tiki.register("::worker_manager", {
+    name: "worker_manager",
+    dependencies: { "canon": "0.0.0", "events": "0.0.0", "underscore": "0.0.0" }
+});
+bespin.tiki.module("worker_manager:index",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
 
-bespin.tiki.require("bespin:plugins").catalog.registerMetadata({"bespin": {"testmodules": [], "resourceURL": "resources/bespin/", "name": "bespin", "environments": {"main": true, "worker": true}, "type": "plugins/boot"}, "syntax_directory": {"resourceURL": "resources/syntax_directory/", "name": "syntax_directory", "environments": {"main": true, "worker": true}, "dependencies": {}, "testmodules": [], "provides": [{"register": "#discoveredNewSyntax", "ep": "extensionhandler", "name": "syntax"}], "type": "plugins/supported", "description": "Catalogs the available syntax engines"}, "underscore": {"testmodules": [], "type": "plugins/thirdparty", "resourceURL": "resources/underscore/", "description": "Functional Programming Aid for Javascript. Works well with jQuery.", "name": "underscore"}});
+"define metadata";
+({
+    "description": "Manages a web worker on the browser side",
+    "dependencies": {
+        "canon": "0.0.0",
+        "events": "0.0.0",
+        "underscore": "0.0.0"
+    },
+    "provides": [
+        {
+            "ep": "command",
+            "name": "worker",
+            "description": "Low-level web worker control (for plugin development)"
+        },
+        {
+            "ep": "command",
+            "name": "worker restart",
+            "description": "Restarts all web workers (for plugin development)",
+            "pointer": "#workerRestartCommand"
+        }
+    ]
+});
+"end";
+
+if (window == null) {
+    throw new Error('The "worker_manager" plugin can only be loaded in the ' +
+        'browser, not a web worker. Use "worker" instead.');
+}
+
+var proxy = require('bespin:proxy');
+var plugins = require('bespin:plugins');
+var console = require('bespin:console').console;
+var _ = require('underscore')._;
+var Event = require('events').Event;
+var Promise = require('bespin:promise').Promise;
+var env = require('environment').env;
+
+var workerManager = {
+    _workers: [],
+
+    add: function(workerSupervisor) {
+        this._workers.push(workerSupervisor);
+    },
+
+    remove: function(workerSupervisor) {
+        this._workers = _(this._workers).without(workerSupervisor);
+    },
+
+    restartAll: function() {
+        var workers = this._workers;
+        _(workers).invoke('kill');
+        _(workers).invoke('start');
+    }
+};
+
+function WorkerSupervisor(pointer) {
+    var m = /^([^#:]+)(?::([^#:]+))?#([^#:]+)$/.exec(pointer);
+    if (m == null) {
+        throw new Error('WorkerSupervisor: invalid pointer specification: "' +
+            pointer + '"');
+    }
+
+    var packageId = m[1], target = m[3];
+    var moduleId = packageId + ":" + (m[2] != null ? m[2] : "index");
+    var base = bespin != null && bespin.base != null ? bespin.base : "";
+
+    this._packageId = packageId;
+    this._moduleId = moduleId;
+    this._base = base;
+    this._target = target;
+
+    this._worker = null;
+    this._currentId = 0;
+
+    this.started = new Event();
+}
+
+WorkerSupervisor.prototype = {
+    _onError: function(ev) {
+        this._worker = null;
+        workerManager.remove(this);
+
+        console.error("WorkerSupervisor: worker failed at file " +
+            ev.filename + ":" + ev.lineno + "; fix the worker and use " +
+            "'worker restart' to restart it");
+    },
+
+    _onMessage: function(ev) {
+        var msg = JSON.parse(ev.data);
+        switch (msg.op) {
+        case 'finish':
+            if (msg.id === this._currentId) {
+                var promise = this._promise;
+
+                // We have to set the promise to null first, in case the user's
+                // then() handler on the promise decides to send another
+                // message to the object.
+                this._promise = null;
+
+                promise.resolve(msg.result);
+            }
+            break;
+
+        case 'log':
+            console[msg.method].apply(console, msg.args);
+            break;
+        }
+    },
+
+    _promise: null,
+
+    /** An event that fires whenever the worker is started or restarted. */
+    started: null,
+
+    /**
+     * Terminates the worker. After this call, the worker can be restarted via
+     * a call to start().
+     */
+    kill: function() {
+        var oldPromise = this._promise;
+        if (oldPromise != null) {
+            oldPromise.reject("killed");
+            this._promise = null;
+        }
+
+        this._worker.terminate();
+        this._worker = null;
+        workerManager.remove(this);
+    },
+
+    /**
+     * Invokes a method on the target running in the worker and returns a
+     * promise that will resolve to the result of that method.
+     */
+    send: function(method, args) {
+        var oldPromise = this._promise;
+        if (oldPromise != null) {
+            oldPromise.reject("interrupted");
+            this._currentId++;
+        }
+
+        var id = this._currentId;
+        var promise = new Promise();
+        this._promise = promise;
+
+        var msg = { op: 'invoke', id: id, method: method, args: args };
+        this._worker.postMessage(JSON.stringify(msg));
+
+        return promise;
+    },
+
+    /**
+     * Starts the worker. Immediately after this method is called, the
+     * "started" event will fire.
+     */
+    start: function() {
+        if (this._worker != null) {
+            throw new Error("WorkerSupervisor: worker already started");
+        }
+
+        var base = this._base, target = this._target;
+        var packageId = this._packageId, moduleId = this._moduleId;
+
+        var worker = new proxy.Worker(base + "BespinEmbedded.js");
+
+        worker.onmessage = this._onMessage.bind(this);
+        worker.onerror = this._onError.bind(this);
+
+        var msg = {
+            op:     'load',
+            base:   base,
+            pkg:    packageId,
+            module: moduleId,
+            target: target
+        };
+        worker.postMessage(JSON.stringify(msg));
+
+        this._worker = worker;
+        this._currentId = 0;
+
+        workerManager.add(this);
+
+        this.started();
+    }
+};
+
+function workerRestartCommand(args, req) {
+    workerManager.restartAll();
+}
+
+exports.WorkerSupervisor = WorkerSupervisor;
+exports.workerManager = workerManager;
+exports.workerRestartCommand = workerRestartCommand;
+
+
+});
+;bespin.tiki.register("::events", {
+    name: "events",
+    dependencies: { "traits": "0.0.0" }
+});
+bespin.tiki.module("events:index",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+exports.Event = function() {
+    var handlers = [];
+    var evt = function() {
+        var args = arguments;
+        handlers.forEach(function(handler) { handler.func.apply(null, args); });
+    };
+
+    /**
+     * Adds a new handler via
+     *  a) evt.add(handlerFunc)
+     *  b) evt.add(reference, handlerFunc)
+     */
+    evt.add = function() {
+        if (arguments.length == 1) {
+            handlers.push({
+                ref: arguments[0],
+                func: arguments[0]
+            });
+        } else {
+            handlers.push({
+                ref: arguments[0],
+                func: arguments[1]
+            });
+        }
+    };
+
+    evt.remove = function(ref) {
+        var notEqual = function(other) { return ref !== other.ref; };
+        handlers = handlers.filter(notEqual);
+    };
+
+    evt.removeAll = function() {
+        handlers = [];
+    };
+
+    return evt;
+};
+
+
+});
+;bespin.tiki.register("::types", {
+    name: "types",
+    dependencies: {  }
+});
+bespin.tiki.module("types:basic",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var catalog = require('bespin:plugins').catalog;
+var console = require('bespin:console').console;
+var Promise = require('bespin:promise').Promise;
+
+var r = require;
+
+/**
+ * These are the basic types that we accept. They are vaguely based on the
+ * Jetpack settings system (https://wiki.mozilla.org/Labs/Jetpack/JEP/24)
+ * although clearly more restricted.
+ * <p>In addition to these types, Jetpack also accepts range, member, password
+ * that we are thinking of adding in the short term.
+ */
+
+/**
+ * 'text' is the default if no type is given.
+ */
+exports.text = {
+    isValid: function(value, typeExt) {
+        return typeof value == 'string';
+    },
+
+    toString: function(value, typeExt) {
+        return value;
+    },
+
+    fromString: function(value, typeExt) {
+        return value;
+    }
+};
+
+/**
+ * We don't currently plan to distinguish between integers and floats
+ */
+exports.number = {
+    isValid: function(value, typeExt) {
+        if (isNaN(value)) {
+            return false;
+        }
+        if (value === null) {
+            return false;
+        }
+        if (value === undefined) {
+            return false;
+        }
+        if (value === Infinity) {
+            return false;
+        }
+        return typeof value == 'number';// && !isNaN(value);
+    },
+
+    toString: function(value, typeExt) {
+        if (!value) {
+            return null;
+        }
+        return '' + value;
+    },
+
+    fromString: function(value, typeExt) {
+        if (!value) {
+            return null;
+        }
+        var reply = parseInt(value, 10);
+        if (isNaN(reply)) {
+            throw new Error('Can\'t convert "' + value + '" to a number.');
+        }
+        return reply;
+    }
+};
+
+/**
+ * true/false values
+ */
+exports.bool = {
+    isValid: function(value, typeExt) {
+        return typeof value == 'boolean';
+    },
+
+    toString: function(value, typeExt) {
+        return '' + value;
+    },
+
+    fromString: function(value, typeExt) {
+        if (value === null) {
+            return null;
+        }
+
+        if (!value.toLowerCase) {
+            return !!value;
+        }
+
+        var lower = value.toLowerCase();
+        if (lower == 'true') {
+            return true;
+        } else if (lower == 'false') {
+            return false;
+        }
+
+        return !!value;
+    }
+};
+
+/**
+ * A JSON object
+ * TODO: Check to see how this works out.
+ */
+exports.object = {
+    isValid: function(value, typeExt) {
+        return typeof value == 'object';
+    },
+
+    toString: function(value, typeExt) {
+        return JSON.stringify(value);
+    },
+
+    fromString: function(value, typeExt) {
+        return JSON.parse(value);
+    }
+};
+
+/**
+ * One of a known set of options
+ */
+exports.selection = {
+    isValid: function(value, typeExt) {
+        if (typeof value != 'string') {
+            return false;
+        }
+
+        if (!typeExt.data) {
+            console.error('Missing data on selection type extension. Skipping');
+            return true;
+        }
+
+        var match = false;
+        typeExt.data.forEach(function(option) {
+            if (value == option) {
+                match = true;
+            }
+        });
+
+        return match;
+    },
+
+    toString: function(value, typeExt) {
+        return value;
+    },
+
+    fromString: function(value, typeExt) {
+        // TODO: should we validate and return null if invalid?
+        return value;
+    },
+
+    resolveTypeSpec: function(extension, typeSpec) {
+        var promise = new Promise();
+
+        if (typeSpec.data) {
+            // If we've got the data already - just use it
+            extension.data = typeSpec.data;
+            promise.resolve();
+        } else if (typeSpec.pointer) {
+            catalog.loadObjectForPropertyPath(typeSpec.pointer).then(function(obj) {
+                var reply = obj(typeSpec);
+                if (typeof reply.then === 'function') {
+                    reply.then(function(data) {
+                        extension.data = data;
+                        promise.resolve();
+                    });
+                } else {
+                    extension.data = reply;
+                    promise.resolve();
+                }
+            }, function(ex) {
+                promise.reject(ex);
+            });
+        } else {
+            // No extra data available
+            console.warn('Missing data/pointer for selection', typeSpec);
+            promise.resolve();
+        }
+
+        return promise;
+    }
+};
+
+});
+
+bespin.tiki.module("types:types",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var catalog = require('bespin:plugins').catalog;
+var console = require('bespin:console').console;
+var Promise = require('bespin:promise').Promise;
+
+/**
+ * Get the simple text-only, no-param version of a typeSpec.
+ */
+exports.getSimpleName = function(typeSpec) {
+    if (!typeSpec) {
+        throw new Error('null|undefined is not a valid typeSpec');
+    }
+
+    if (typeof typeSpec == 'string') {
+        return typeSpec;
+    }
+
+    if (typeof typeSpec == 'object') {
+        if (!typeSpec.name) {
+            throw new Error('Missing name member to typeSpec');
+        }
+
+        return typeSpec.name;
+    }
+
+    throw new Error('Not a typeSpec: ' + typeSpec);
+};
+
+/**
+ * 2 typeSpecs are considered equal if their simple names are the same.
+ */
+exports.equals = function(typeSpec1, typeSpec2) {
+    return exports.getSimpleName(typeSpec1) == exports.getSimpleName(typeSpec2);
+};
+
+/**
+ * A deferred type is one where we hope to find out what the type is just
+ * in time to use it. For example the 'set' command where the type of the 2nd
+ * param is defined by the 1st param.
+ * @param typeSpec An object type spec with name = 'deferred' and a pointer
+ * which to call through catalog.loadObjectForPropertyPath (passing in the
+ * original typeSpec as a parameter). This function is expected to return either
+ * a new typeSpec, or a promise of a typeSpec.
+ * @returns A promise which resolves to the new type spec from the pointer.
+ */
+exports.undeferTypeSpec = function(typeSpec) {
+    // Deferred types are specified by the return from the pointer
+    // function.
+    var promise = new Promise();
+    if (!typeSpec.pointer) {
+        promise.reject(new Error('Missing deferred pointer'));
+        return promise;
+    }
+
+    catalog.loadObjectForPropertyPath(typeSpec.pointer).then(function(obj) {
+        var reply = obj(typeSpec);
+        if (typeof reply.then === 'function') {
+            reply.then(function(newTypeSpec) {
+                promise.resolve(newTypeSpec);
+            }, function(ex) {
+                promise.reject(ex);
+            });
+        } else {
+            promise.resolve(reply);
+        }
+    }, function(ex) {
+        promise.reject(ex);
+    });
+
+    return promise;
+};
+
+// Warning: These next 2 functions are virtually cut and paste from
+// command_line:typehint.js
+// If you change this, there are probably parallel changes to be made there
+// There are 2 differences between the functions:
+// - We lookup type|typehint in the catalog
+// - There is a concept of a default typehint, where there is no similar
+//   thing for types. This is sensible, because hints are optional nice
+//   to have things. Not so for types.
+// Whilst we could abstract out the changes, I'm not sure this simplifies
+// already complex code
+
+/**
+ * Given a string, look up the type extension in the catalog
+ * @param name The type name. Object type specs are not allowed
+ * @returns A promise that resolves to a type extension
+ */
+function resolveObjectType(typeSpec) {
+    var promise = new Promise();
+    var ext = catalog.getExtensionByKey('type', typeSpec.name);
+    if (ext) {
+        promise.resolve({ ext: ext, typeSpec: typeSpec });
+    } else {
+        promise.reject(new Error('Unknown type: ' + typeSpec.name));
+    }
+    return promise;
+};
+
+/**
+ * Look-up a typeSpec and find a corresponding type extension. This function
+ * does not attempt to load the type or go through the resolution process,
+ * for that you probably want #resolveType()
+ * @param typeSpec A string containing the type name or an object with a name
+ * and other type parameters e.g. { name: 'selection', data: [ 'one', 'two' ] }
+ * @return a promise that resolves to an object containing the resolved type
+ * extension and the typeSpec used to resolve the type (which could be different
+ * from the passed typeSpec if this was deferred). The object will be in the
+ * form { ext:... typeSpec:... }
+ */
+function resolveTypeExt(typeSpec) {
+    if (typeof typeSpec === 'string') {
+        return resolveObjectType({ name: typeSpec });
+    }
+
+    if (typeof typeSpec === 'object') {
+        if (typeSpec.name === 'deferred') {
+            var promise = new Promise();
+            exports.undeferTypeSpec(typeSpec).then(function(newTypeSpec) {
+                resolveTypeExt(newTypeSpec).then(function(reply) {
+                    promise.resolve(reply);
+                }, function(ex) {
+                    promise.reject(ex);
+                });
+            });
+            return promise;
+        } else {
+            return resolveObjectType(typeSpec);
+        }
+    }
+
+    throw new Error('Unknown typeSpec type: ' + typeof typeSpec);
+};
+
+/**
+ * Do all the nastiness of: converting the typeSpec to an extension, then
+ * asynchronously loading the extension to a type and then calling
+ * resolveTypeSpec if the loaded type defines it.
+ * @param typeSpec a string or object defining the type to resolve
+ * @returns a promise which resolves to an object containing the type and type
+ * extension as follows: { type:... ext:... }
+ * @see #resolveTypeExt
+ */
+exports.resolveType = function(typeSpec) {
+    var promise = new Promise();
+
+    resolveTypeExt(typeSpec).then(function(data) {
+        data.ext.load(function(type) {
+            // We might need to resolve the typeSpec in a custom way
+            if (typeof type.resolveTypeSpec === 'function') {
+                type.resolveTypeSpec(data.ext, data.typeSpec).then(function() {
+                    promise.resolve({ type: type, ext: data.ext });
+                }, function(ex) {
+                    promise.reject(ex);
+                });
+            } else {
+                // Nothing to resolve - just go
+                promise.resolve({ type: type, ext: data.ext });
+            }
+        });
+    }, function(ex) {
+        promise.reject(ex);
+    });
+
+    return promise;
+};
+
+/**
+ * Convert some data from a string to another type as specified by
+ * <tt>typeSpec</tt>.
+ */
+exports.fromString = function(stringVersion, typeSpec) {
+    var promise = new Promise();
+    exports.resolveType(typeSpec).then(function(typeData) {
+        promise.resolve(typeData.type.fromString(stringVersion, typeData.ext));
+    });
+    return promise;
+};
+
+/**
+ * Convert some data from an original type to a string as specified by
+ * <tt>typeSpec</tt>.
+ */
+exports.toString = function(objectVersion, typeSpec) {
+    var promise = new Promise();
+    exports.resolveType(typeSpec).then(function(typeData) {
+        promise.resolve(typeData.type.toString(objectVersion, typeData.ext));
+    });
+    return promise;
+};
+
+/**
+ * Convert some data from an original type to a string as specified by
+ * <tt>typeSpec</tt>.
+ */
+exports.isValid = function(originalVersion, typeSpec) {
+    var promise = new Promise();
+    exports.resolveType(typeSpec).then(function(typeData) {
+        promise.resolve(typeData.type.isValid(originalVersion, typeData.ext));
+    });
+    return promise;
+};
+
+});
+
+bespin.tiki.module("types:index",function(require,exports,module) {
+
+});
+;bespin.tiki.register("::syntax_manager", {
+    name: "syntax_manager",
+    dependencies: { "worker_manager": "0.0.0", "events": "0.0.0", "underscore": "0.0.0", "syntax_directory": "0.0.0" }
+});
+bespin.tiki.module("syntax_manager:index",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var _ = require('underscore')._;
+var Event = require('events').Event;
+var WorkerSupervisor = require('worker_manager').WorkerSupervisor;
+var console = require('bespin:console').console;
+var rangeutils = require('rangeutils:utils/range');
+var syntaxDirectory = require('syntax_directory').syntaxDirectory;
+
+// The number of lines to highlight at once.
+var GRANULARITY = 100;
+
+// Replaces elements at position i in dest with the elements of src. If i is
+// beyond the end of dest, expands dest with copies of fill.
+function replace(dest, i, src, fill) {
+    while (dest.length < i) {
+        dest.push(_(fill).clone());
+    }
+
+    var args = [ i, src.length ].concat(src);
+    Array.prototype.splice.apply(dest, args);
+    return dest;
+}
+
+// A simple key-value store in which each key is paired with a corresponding
+// line. When the syntax information is updated for a line, the symbols from
+// those lines are wiped out and replaced with the new symbols.
+function Symbols() {
+    this._lines = [];
+    this._syms = {};
+}
+
+Symbols.prototype = {
+    get: function(sym) {
+        return this._syms["-" + sym];
+    },
+
+    replaceLine: function(row, newSymbols) {
+        var lines = this._lines, syms = this._syms;
+        if (row < lines.length && _(lines[row]).isArray()) {
+            _(lines[row]).each(function(ident) { delete syms["-" + ident]; });
+        }
+
+        function stripLeadingDash(s) { return s.substring(1); }
+        lines[row] = _(newSymbols).keys().map(stripLeadingDash);
+
+        _(syms).extend(newSymbols);
+    }
+};
+
+function Context(syntaxInfo, syntaxManager) {
+    this._syntaxInfo = syntaxInfo;
+    this._syntaxManager = syntaxManager;
+
+    this._invalidRow = 0;
+    this._states = [];
+    this._active = false;
+
+    this.symbols = new Symbols;
+}
+
+Context.prototype = {
+    _annotate: function() {
+        if (this._invalidRow == null) {
+            throw new Error("syntax_manager.Context: attempt to annotate " +
+                "without any invalid row");
+        }
+        if (!this._active) {
+            throw new Error("syntax_manager.Context: attempt to annotate " +
+                "while inactive");
+        }
+
+        if (this._worker == null) {
+            this._createWorker();
+            return;
+        }
+
+        var lines = this._syntaxManager.getTextLines();
+        var row = this._invalidRow;
+        var state = row === 0 ? this.getName() + ':start' : this._states[row];
+        var lastRow = Math.min(lines.length, row + GRANULARITY);
+        lines = lines.slice(row, lastRow);
+
+        var runRange = {
+            start: { row: row, col: 0 },
+            end: { row: lastRow - 1, col: _(lines).last().length }
+        };
+
+        var pr = this._worker.send('annotate', [ state, lines, runRange ]);
+        pr.then(_(this._annotationFinished).bind(this, row, lastRow));
+    },
+
+    _annotationFinished: function(row, lastRow, result) {
+        if (!this._active) {
+            return;
+        }
+
+        var syntaxManager = this._syntaxManager;
+        syntaxManager.mergeAttrs(row, result.attrs);
+        syntaxManager.mergeSymbols(row, result.symbols);
+
+        replace(this._states, row, result.states);
+
+        if (lastRow >= this._getRowCount()) {
+            this._invalidRow = null;    // We're done!
+            this._active = false;
+            return;
+        }
+
+        this._invalidRow = lastRow;
+        this._annotate();
+    },
+
+    _createWorker: function() {
+        var syntaxInfo = this._syntaxInfo;
+        if (syntaxInfo == null) {
+            return false;
+        }
+
+        var worker = new WorkerSupervisor("syntax_worker#syntaxWorker");
+        this._worker = worker;
+
+        worker.started.add(this._workerStarted.bind(this));
+        worker.start();
+
+        return true;
+    },
+
+    _getRowCount: function() {
+        return this._syntaxManager.getTextLines().length;
+    },
+
+    _workerStarted: function() {
+        this._worker.send('loadSyntax', [ this._syntaxInfo.name ]);
+        if (this._active) {
+            this._annotate();
+        }
+    },
+
+    // Switches on this syntax context and begins annotation. It is the
+    // caller's responsibility to ensure that there exists an invalid row
+    // before calling this. (Typically the caller ensures this by calling cut()
+    // first.)
+    activateAndAnnotate: function() {
+        this._active = true;
+        this._annotate();
+    },
+
+    contextsAtPosition: function(pos) {
+        var syntaxInfo = this._syntaxInfo;
+        if (syntaxInfo == null) {
+            return [ 'plain' ];
+        }
+
+        return [ syntaxInfo.name ];             // FIXME
+    },
+
+    // Invalidates the syntax context at a row.
+    cut: function(row) {
+        var endRow = this._getRowCount();
+        if (row < 0 || row >= endRow) {
+            throw new Error("Attempt to cut the context at an invalid row");
+        }
+
+        if (this._invalidRow != null && this._invalidRow < row) {
+            return;
+        }
+        this._invalidRow = row;
+
+        // Mark ourselves as inactive, so that if the web worker was working on
+        // a series of rows we know to discard its results.
+        this._active = false;
+    },
+
+    getName: function() {
+        return this._syntaxInfo.name;
+    },
+
+    kill: function() {
+        var worker = this._worker;
+        if (worker == null) {
+            return;
+        }
+
+        worker.kill();
+        this._worker = null;
+    }
+};
+
+/**
+ * The syntax manager coordinates a series of syntax contexts, each run in a
+ * separate web worker. It receives text editing notifications, updates and
+ * stores the relevant syntax attributes, and provides marked-up text as the
+ * layout manager requests it.
+ *
+ * @constructor
+ * @exports SyntaxManager as syntax_manager:SyntaxManager
+ */
+function SyntaxManager(layoutManager) {
+    this.layoutManager = layoutManager;
+
+    /** Called whenever the attributes have been updated. */
+    this.attrsChanged = new Event;
+
+    /** Called whenever the syntax (file type) has been changed. */
+    this.syntaxChanged = new Event;
+
+    this._context = null;
+    this._invalidRows = null;
+    this._contextRanges = null;
+    this._attrs = [];
+    this._symbols = new Symbols;
+    this._syntax = 'plain';
+
+    this._reset();
+}
+
+SyntaxManager.prototype = {
+    /** @lends SyntaxManager */
+
+    _getTextStorage: function() {
+        return this.layoutManager.textStorage;
+    },
+
+    // Invalidates all the highlighting and recreates the workers.
+    _reset: function() {
+        var ctx = this._context;
+        if (ctx != null) {
+            ctx.kill();
+            this._context = null;
+        }
+
+        var syn = this._syntax;
+        var syntaxInfo = syn === 'plain' ? null : syntaxDirectory.get(syn);
+
+        ctx = new Context(syntaxInfo, this);
+        this._context = ctx;
+        ctx.activateAndAnnotate();
+    },
+
+    attrsChanged: null,
+    syntaxChanged: null,
+
+    /** Returns the contexts that are active at the position pos. */
+    contextsAtPosition: function(pos) {
+        return this._context.contextsAtPosition(pos);
+    },
+
+    /**
+     * Returns the attributes most recently delivered from the syntax engine.
+     * Does not instruct the engine to perform any work; use invalidateRow()
+     * for that.
+     */
+    getAttrsForRows: function(startRow, endRow) {
+        return this._attrs.slice(startRow, endRow);
+    },
+
+    /**
+     * Returns the metadata currently associated with the given symbol, or null
+     * if the symbol is unknown.
+     */
+    getSymbol: function(ident) {
+        return this._symbols.get(ident);
+    },
+
+    /** Returns the current syntax. */
+    getSyntax: function() {
+        return this._syntax;
+    },
+
+    /** A convenience function to return the lines from the text storage. */
+    getTextLines: function() {
+        return this._getTextStorage().lines;
+    },
+
+    /** Marks the text as needing an update starting at the given row. */
+    invalidateRow: function(row) {
+        var ctx = this._context;
+        ctx.cut(row);
+        ctx.activateAndAnnotate();
+    },
+
+    /**
+     * Merges the supplied attributes into the text, overwriting the attributes
+     * that were there previously.
+     */
+    mergeAttrs: function(startRow, newAttrs) {
+        replace(this._attrs, startRow, newAttrs, []);
+        this.attrsChanged(startRow, startRow + newAttrs.length);
+    },
+
+    /**
+     * Merges the supplied symbols into the symbol store, overwriting any
+     * symbols previously defined on those lines.
+     */
+    mergeSymbols: function(startRow, newSymbols) {
+        var symbols = this._symbols;
+        _(newSymbols).each(function(lineSyms, i) {
+            symbols.replaceLine(startRow + i, lineSyms);
+        });
+    },
+
+    /**
+     * Sets the syntax and invalidates all the highlighting. If no syntax
+     * plugin is available, sets the syntax to "plain".
+     */
+    setSyntax: function(syntax) {
+        this._syntax = syntaxDirectory.hasSyntax(syntax) ? syntax : 'plain';
+        this.syntaxChanged(syntax);
+        this._reset();
+    },
+
+    /** Sets the syntax appropriately for a file extension. */
+    setSyntaxFromFileExt: function(fileExt) {
+        return this.setSyntax(syntaxDirectory.syntaxForFileExt(fileExt));
+    }
+};
+
+exports.SyntaxManager = SyntaxManager;
+
+
+});
+
+bespin.tiki.require("bespin:plugins").catalog.registerMetadata({"traits": {"resourceURL": "resources/traits/", "description": "Traits library, traitsjs.org", "dependencies": {}, "testmodules": [], "provides": [], "type": "plugins/thirdparty", "name": "traits"}, "settings": {"resourceURL": "resources/settings/", "description": "Infrastructure and commands for managing user preferences", "share": true, "dependencies": {"types": "0.0"}, "testmodules": [], "provides": [{"description": "Storage for the customizable Bespin settings", "pointer": "index#settings", "ep": "appcomponent", "name": "settings"}, {"indexOn": "name", "description": "A setting is something that the application offers as a way to customize how it works", "register": "index#addSetting", "ep": "extensionpoint", "name": "setting"}, {"description": "A settingChange is a way to be notified of changes to a setting", "ep": "extensionpoint", "name": "settingChange"}, {"pointer": "commands#setCommand", "description": "define and show settings", "params": [{"defaultValue": null, "type": {"pointer": "settings:index#getSettings", "name": "selection"}, "name": "setting", "description": "The name of the setting to display or alter"}, {"defaultValue": null, "type": {"pointer": "settings:index#getTypeSpecFromAssignment", "name": "deferred"}, "name": "value", "description": "The new value for the chosen setting"}], "ep": "command", "name": "set"}, {"pointer": "commands#unsetCommand", "description": "unset a setting entirely", "params": [{"type": {"pointer": "settings:index#getSettings", "name": "selection"}, "name": "setting", "description": "The name of the setting to return to defaults"}], "ep": "command", "name": "unset"}], "type": "plugins/supported", "name": "settings"}, "canon": {"resourceURL": "resources/canon/", "name": "canon", "environments": {"main": true, "worker": false}, "dependencies": {"environment": "0.0.0", "events": "0.0.0", "settings": "0.0.0"}, "testmodules": [], "provides": [{"indexOn": "name", "description": "A command is a bit of functionality with optional typed arguments which can do something small like moving the cursor around the screen, or large like cloning a project from VCS.", "ep": "extensionpoint", "name": "command"}, {"description": "An extension point to be called whenever a new command begins output.", "ep": "extensionpoint", "name": "addedRequestOutput"}, {"description": "A dimensionsChanged is a way to be notified of changes to the dimension of Bespin", "ep": "extensionpoint", "name": "dimensionsChanged"}, {"description": "How many typed commands do we recall for reference?", "defaultValue": 50, "type": "number", "ep": "setting", "name": "historyLength"}, {"action": "create", "pointer": "history#InMemoryHistory", "ep": "factory", "name": "history"}], "type": "plugins/supported", "description": "Manages commands"}, "events": {"resourceURL": "resources/events/", "description": "Dead simple event implementation", "dependencies": {"traits": "0.0"}, "testmodules": ["tests/test"], "provides": [], "type": "plugins/supported", "name": "events"}, "environment": {"testmodules": [], "dependencies": {"settings": "0.0.0"}, "resourceURL": "resources/environment/", "name": "environment", "type": "plugins/supported"}, "bespin": {"testmodules": [], "resourceURL": "resources/bespin/", "name": "bespin", "environments": {"main": true, "worker": true}, "type": "plugins/boot"}, "underscore": {"testmodules": [], "type": "plugins/thirdparty", "resourceURL": "resources/underscore/", "description": "Functional Programming Aid for Javascript. Works well with jQuery.", "name": "underscore"}, "worker_manager": {"resourceURL": "resources/worker_manager/", "description": "Manages a web worker on the browser side", "dependencies": {"canon": "0.0.0", "events": "0.0.0", "underscore": "0.0.0"}, "testmodules": [], "provides": [{"description": "Low-level web worker control (for plugin development)", "ep": "command", "name": "worker"}, {"description": "Restarts all web workers (for plugin development)", "pointer": "#workerRestartCommand", "ep": "command", "name": "worker restart"}], "type": "plugins/supported", "name": "worker_manager"}, "syntax_directory": {"resourceURL": "resources/syntax_directory/", "name": "syntax_directory", "environments": {"main": true, "worker": true}, "dependencies": {}, "testmodules": [], "provides": [{"register": "#discoveredNewSyntax", "ep": "extensionhandler", "name": "syntax"}], "type": "plugins/supported", "description": "Catalogs the available syntax engines"}, "types": {"resourceURL": "resources/types/", "description": "Defines parameter types for commands", "testmodules": ["tests/testBasic", "tests/testTypes"], "provides": [{"indexOn": "name", "description": "Commands can accept various arguments that the user enters or that are automatically supplied by the environment. Those arguments have types that define how they are supplied or completed. The pointer points to an object with methods convert(str value) and getDefault(). Both functions have `this` set to the command's `takes` parameter. If getDefault is not defined, the default on the command's `takes` is used, if there is one. The object can have a noInput property that is set to true to reflect that this type is provided directly by the system. getDefault must be defined in that case.", "ep": "extensionpoint", "name": "type"}, {"description": "Text that the user needs to enter.", "pointer": "basic#text", "ep": "type", "name": "text"}, {"description": "A JavaScript number", "pointer": "basic#number", "ep": "type", "name": "number"}, {"description": "A true/false value", "pointer": "basic#bool", "ep": "type", "name": "boolean"}, {"description": "An object that converts via JavaScript", "pointer": "basic#object", "ep": "type", "name": "object"}, {"description": "A string that is constrained to be one of a number of pre-defined values", "pointer": "basic#selection", "ep": "type", "name": "selection"}, {"description": "A type which we don't understand from the outset, but which we hope context can help us with", "ep": "type", "name": "deferred"}], "type": "plugins/supported", "name": "types"}, "syntax_manager": {"resourceURL": "resources/syntax_manager/", "name": "syntax_manager", "environments": {"main": true, "worker": false}, "dependencies": {"worker_manager": "0.0.0", "events": "0.0.0", "underscore": "0.0.0", "syntax_directory": "0.0.0"}, "testmodules": [], "provides": [], "type": "plugins/supported", "description": "Provides syntax highlighting services for the editor"}});
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
