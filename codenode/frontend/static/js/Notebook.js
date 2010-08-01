@@ -158,14 +158,11 @@ __notebook_component_inits__ = function() {
     Notebook.__init__.Async();
     Util.init();
     window.onBespinLoad = function(){
-          console.log('hi');
+          console.log('onBespinLoad');
           Notebook.bespinLoaded = true;
-              
+          $('.cell.input').each(function(index) { this.bespinify(); console.log("bs");});              
       };
-    // $(window).bind('onBespinLoad', function(){
-    //         // bespin.useBespin(id, config);
-    //         console.log('ini');
-    // });
+
 };
 
 $(document).ready(__notebook_component_inits__);

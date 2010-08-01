@@ -95,7 +95,7 @@ Notebook.DOM._content = function() {
 
 Notebook.DOM._textarea = function() {
     var node = $.DIV({
-            'class':'input bespin',
+            'class':'input',
             'cols':'1',
             'rows':'1',
             });

@@ -163,18 +163,18 @@ Notebook.Cell.prototype.setAsGroup = function() {
 
 Notebook.Cell.prototype.bespinify = function() {
     if (this.celltype == 'input' & Notebook.bespinLoaded) { 
-        // This focus steal is too late
         var cell = this;
         bespin.useBespin(this.textareaNode(),
             {
                 stealFocus: true,
-                syntax: "js",
+                syntax: "py",
+                settings: { tabstop:4, theme: "white" },
+                noAutoresize: true
             }
         ).then(function(env) {
             // TODO: this is not executed if the editor is set up automatically
             // so the content does not get set.
             cell.textareaNode().bespin = env;
-            // env.editor.value = cell.oldcontent;
             cell.adjustTextarea();
         });
     };
@@ -687,7 +687,7 @@ Notebook.Cell.prototype.adjustTextarea = function() {
         var rows = this.content().split('\n').length;
         
         // TODO: proper height calculation for element
-        var h = ((25*rows)+35);
+        var h = ((25*rows)+50);
         $(this.textareaNode()).height(h);
         // $(this.childNodes[0]).height(300);  
         if (this.textareaNode().bespin) {
