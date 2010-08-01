@@ -637,8 +637,7 @@ Notebook.Cell.prototype.content = function(newcontent) {
                     //this.contentNode().childNodes[0].src = newcontent;
                     //$(this.contentNode().firstChild).ready(console.info(this.contentNode().firstChild.firstChild.height));
                     // parameterize image path
-                    $(this.contentNode()).find('img.outputimage')[0].src = '/data/plot_images/'+newcontent;
-                    $(this.contentNode()).find('img.outputimage')[0].name = newcontent;
+                    $(this.contentNode()).find('img.outputimage')[0].src = newcontent;
                     break;
                 case 'outputhtml':
                     $(this.contentNode().childNodes[0]).html(newcontent);

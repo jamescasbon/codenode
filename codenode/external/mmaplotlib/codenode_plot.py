@@ -1,7 +1,7 @@
 import os
 import sys
 import uuid
-import pickle
+import base64
 from StringIO import StringIO
 
 from pylab import show, savefig
@@ -13,8 +13,7 @@ _original_show = show
 def show(fn=None, *args, **kwargs):
     s = StringIO()
     savefig(s, dpi=80, **kwargs)
-    p = pickle.dumps(s)
-    data = "__outputimage__" + p + "__outputimage__"
+    data = "__outputimage__"  +  'data:image/png;base64,'+ base64.b64encode(s.getvalue()) + "__outputimage__"
     sys.stdout.write(data)
     close_figure()
     
