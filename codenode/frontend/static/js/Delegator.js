@@ -87,12 +87,24 @@ Notebook.Delegator.prototype = {
         var target_selector = e.target.tagName.toLowerCase() + '.' + e.target.className;
         var target_group = self.targets[target_selector];
 
+        // We want to catch events in a complex cell's leaf elements higher 
+        // up the DOM tree.  Normally, you would do this using event 
+        // bubbling.  In this Delegator all events are bubbled meaning we cannot 
+        // get the element of interest using event.currentTarget.
+        // Instead using '*' as a workaround to allow us to match any 
+        // child element of a given class. 
+        if (target_group == null) { 
+            target_selector = '*.' + e.target.className;
+            target_group = self.targets[target_selector];
+        }
+        
+        console.log(
+            'Delegator received event in ' + target_selector 
+            + ' delegating to group ' + target_group
+        );
+
         if (target_group) {
             var group_element = $(e.target).parents(target_group);
-            
-            // console.log('delegating ' + target_selector + ' event to ' + 
-            //     group_element + ' specified by ' + target_group
-            // ) 
             
             e.groupNode = group_element[0];
             e.mode = self.mode;
@@ -574,8 +586,10 @@ Notebook.__init__.Delegator = function() {
             'a.outputimage': [cellUpArrowAction,
                                 cellDownArrowAction],
             'img.outputimage': [mainNullClick],
-            // need some way to specfify all the elements inside the markdown
             'div.outputhtml': [cellUpArrowAction,
+                                cellDownArrowAction,
+                                mainNullClick],
+            '*.markdownoutput': [cellUpArrowAction,
                                 cellDownArrowAction,
                                 mainNullClick],
         },

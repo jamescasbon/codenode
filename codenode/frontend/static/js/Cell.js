@@ -605,6 +605,7 @@ Notebook.Cell.prototype.content = function(newcontent) {
                     break;
                 case 'outputhtml':
                     $(this.contentNode().childNodes[0]).html(newcontent);
+                    $(this.contentNode().childNodes[0]).find('*').addClass('markdownoutput');
                     // store a copy of the content before MathJax has typeset it
                     // which is the html to be saved
                     this.pretypesethtml = newcontent;
