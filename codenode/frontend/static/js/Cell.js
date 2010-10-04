@@ -526,7 +526,6 @@ Notebook.Cell.prototype.openGroup = function() {
         }
         this.open = true;
     }
-    this.open = true;
 };
 
 Notebook.Cell.prototype.toggleOpen = function() {
