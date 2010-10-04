@@ -290,27 +290,15 @@ def installmathjax_command():
     target = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static', 'external')
     target = os.path.abspath(target)
     os.chdir(target)
-    codepkg = 'http://downloads.sourceforge.net/project/mathjax/MathJax/beta2/MathJax-beta2.zip'
-    fontpkg = 'http://downloads.sourceforge.net/project/mathjax/MathJax-webfonts/MathJax-webfonts-beta2.zip'
+    codepkg = 'http://downloads.sourceforge.net/project/mathjax/MathJax/v1.0.1/MathJax-v1.0.1a.zip'
     
     print 'fetching MathJax from SF, could be slooooow....'
-    print 'fetching code...'
     codetmp = tempfile.NamedTemporaryFile()
     codetmp.write(urllib.urlopen(codepkg).read())
     codetmp.flush()
     
-    print 'fetching fonts... (12MB)'
-    fonttmp = tempfile.NamedTemporaryFile()
-    fonttmp.write(urllib.urlopen(fontpkg).read())
-    fonttmp.flush()
-    
     print 'installing in', target
     os.system('unzip %s' % codetmp.name)
-    # Needs python 2.6:    
-
-    os.chdir('MathJax')
-    os.system('unzip %s' % fonttmp.name)
-    
     
     
 def help_command(**options):
