@@ -96,7 +96,7 @@ Notebook.Delegator.prototype = {
         if (target_group == null) { 
             target_selector = '*.' + e.target.className;
             target_group = self.targets[target_selector];
-        }
+        };
         
         console.log(
             'Delegator received event in ' + target_selector 
