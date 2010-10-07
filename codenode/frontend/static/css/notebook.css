@@ -208,6 +208,10 @@ textarea.input {
     display: block;
 }
 
+textarea.input.evaluating { 
+    background: url('/static/external/spinning-wait-icons/wait30trans.gif') no-repeat center center;
+}
+
 textarea.outputtext {
     border-style: none;
     overflow: hidden;

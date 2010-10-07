@@ -760,6 +760,7 @@ Notebook.Cell.prototype.evaluate = function() {
     if (this.evaluatable) {
         this.evaluating = 2;
         this.highlightBracket()
+        $(this.textareaNode()).addClass('evaluating');
         //!! reference to ASYNC
         Notebook.Async.evalCell(this.id,this.content());
     }
@@ -767,6 +768,7 @@ Notebook.Cell.prototype.evaluate = function() {
 
 //!!!! REDO !!!
 Notebook.Cell.prototype.evalResult = function() {
+    $(this.textareaNode()).removeClass('evaluating');
     this.evaluating = 0; //not evaluating
     this.unhighlightBracket();
 };
