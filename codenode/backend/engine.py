@@ -130,7 +130,6 @@ class EngineInstanceClient(object):
         """
         return {'result':'started'}
 
-
     @defer.inlineCallbacks
     def engine_evaluate(self, to_evaluate, cellid):
         """

@@ -18,9 +18,10 @@ $(window).bind('beforeunload', function() {
     }
 });
 
-// supress the backspace key for the window
+// supress the backspace key for the window, but not the changetitle 
+// must be a better way!
 $(window).keydown(function(e) {
-    if (e.keyCode === 8)
+    if (e.keyCode === 8 & e.target.id != 'changetitle')
     {
         return false;
     }
