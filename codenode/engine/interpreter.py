@@ -147,7 +147,7 @@ class Interpreter(InteractiveInterpreter):
             if line or more:
                 torun = '\n'.join(command_buffer)
                 try:
-                    more = self.runsource(torun)
+                    more = self.runsource(torun, symbol='exec')
                 except OperationAborted, e:
                     print>>sys.stderr, e.value
                     #sys.stderr.write(e.value)
