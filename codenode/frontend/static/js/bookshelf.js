@@ -514,7 +514,6 @@ BookShelf = {
         /* var data = data.replace(/-/g, "/");// + ' GMT'
         var dateobj = new Date(data);
         var nicedate = BookShelf.niceDate(dateobj);
-        console.log(dateobj);
 		var epoch = Math.floor(dateobj.getTime());*/ 
         return $.TD({id:epoch, className:'td_datemod'}, nicedate); //+" - "+d.getFullYear());
     }

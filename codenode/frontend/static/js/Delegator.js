@@ -295,7 +295,6 @@ Notebook.ClickAction.prototype = {
 bracketClick = new Notebook.ClickAction('braclick');
 bracketClick.type = 'click';
 bracketClick.handler = function(e) {
-    console.log('bracketSelector.select ' + e.groupNode);
     Notebook.bracketSelector.select(e.groupNode.id);
 };
 

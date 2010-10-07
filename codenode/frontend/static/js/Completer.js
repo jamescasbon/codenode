@@ -128,7 +128,6 @@ Notebook.Completer = {
     completionTable2: function(cellid) {
         var elem = $.TABLE({'id':'completions','class':'completions'}, [$.THEAD({}, ''), $.TBODY({}, '')]);
         var pos = $("#"+cellid).position();
-        console.log(pos);
         var topval = pos.top+15;
         var leftval = 4*12 + pos.left;
         return $(elem).css("top", topval+"px").css("left", leftval+"px"); //.css("width", twidth+"px");
