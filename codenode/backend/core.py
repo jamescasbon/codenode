@@ -86,7 +86,7 @@ class EngineProcessManager(procmon.ProcessMonitor):
         p.name = name
         proc_config.processProtocol = p
         self.processes[name] = proc_config
-        if self.active:
+        if self.running:
             self.startProcess(name)
         return p.deferred
 

@@ -125,11 +125,10 @@ class EngineInstanceClient(object):
         result = yield meth(engine_arg, cellid)
         defer.returnValue(result)
 
-    @defer.inlineCallbacks
     def engine_start(self, args, arg):
         """dummy
         """
-        defer.returnValue({'result':'started'})
+        return {'result':'started'}
 
 
     @defer.inlineCallbacks
