@@ -19,3 +19,5 @@ PLOT_IMAGES = os.path.join(HOME_PATH, 'plot_images')
 INSTALLED_APPS = INSTALLED_APPS + ('django_nose', 'django_extensions')
 
 TEST_RUNNER = 'django_nose.run_tests'
+
+COMPRESS = False

@@ -65,6 +65,18 @@ body {
     top:16px;
     margin-left:12px;
 }
+#revhistory {
+    top:14px;
+    font-family: sans-serif;
+    font-size:11px;
+    position:relative;
+    top:16px;
+    margin-left:12px;
+    color:#8f8f8f;
+}
+#revhistory a {
+    color:#7887AF;
+}
 
 /*******************************************/
 /* Notebook Controls */
@@ -196,6 +208,10 @@ textarea.input {
     display: block;
 }
 
+textarea.input.evaluating { 
+    background: url('/static/external/spinning-wait-icons/wait30trans.gif') no-repeat center center;
+}
+
 textarea.outputtext {
     border-style: none;
     overflow: hidden;
@@ -235,14 +251,14 @@ textarea.spawninput:focus {
 /******************************************/
 /** Specific cell content styles **/
 .cell .contents textarea.input {
-    /*font-family: monospace;
-    line-height: normal;*/
+    font-family: monospace;
+    line-height: normal;*
     font-size: 13px;
     border-style: none;
 }
 
 .cell .contents textarea.outputtext {
-    /*font-family: monospace;*/
+    font-family: monospace;
     overflow: auto; 
     font-size: 13px;
     border-style: none;
