@@ -172,6 +172,7 @@ Notebook.TreeBranch.setOutputCell = function(outputnode, inputid) {
         //very hack, assumes one output cell after input...and stuff
         self.removeCellNode(node.nextCell());
     }
+    node.spawnerNode().enabled = false;
     self.putCellNodeAfter(node, outputnode);
     var oid = outputnode.id;
     $('img.outputimage').one('load', oid, function(e) {
@@ -191,6 +192,7 @@ Notebook.TreeBranch.setNullOutputCell = function(inputid) {
     if (node.isHead()) {
         //very hack, assumes one output cell after input...and stuff
         self.removeCellNode(node.nextCell());
+        node.spawnerNode().enabled = true;
     }
     self.sieveBranch(node.getParentBranch());
 };
@@ -327,7 +329,6 @@ Notebook.TreeBranch.branchAtNode = function(node) {
         groupnode.prependChildCells(node);
         $('img.bracketmaskimg').ifixpng();//xxx iehack
         
-        
         // check open/closed state of all these cells to divine the groupnode openness
         // equivalent to any([x.open for x in [node]+nodes])
         if (!node.open) { 
@@ -339,6 +340,10 @@ Notebook.TreeBranch.branchAtNode = function(node) {
                 groupnode.open = false;
             };
         });
+        
+        if (node.celltype == 'input') {
+            node.spawnerNode().enabled = false;
+        }
     
         return groupnode;
     } else {

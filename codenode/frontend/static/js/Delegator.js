@@ -355,13 +355,18 @@ spawnKeydownAction.type = 'keydown';
 spawnKeydownAction.shift = 'maybe';
 spawnKeydownAction.ctrl = 'maybe';
 spawnKeydownAction.handler = function(e) {
-    var node = Notebook.TreeBranch.spawnInputCellNode();
     if (e.groupNode.id == 'topspawner') {
+        var node = Notebook.TreeBranch.spawnInputCellNode();
         Notebook.TreeBranch.putCellNodeAtTop(node);
-    } else {
+        node.setFocus();
+        return 
+    }  
+    if (e.groupNode.parentNode.spawnerNode().enabled) {   
+        var node = Notebook.TreeBranch.spawnInputCellNode();
         Notebook.TreeBranch.putCellNodeAfter(e.groupNode.parentNode, node);
+        node.setFocus();
     }
-    node.setFocus();
+    
 };
 
 evalAction = new Notebook.Action('eval');
