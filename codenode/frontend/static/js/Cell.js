@@ -499,7 +499,8 @@ Notebook.Cell.prototype.closeGroup = function() {
         if (this.contentNode().firstChild.cellstyle == 'markdown') {
             // mardown cells close the input group 
             $(this.contentNode().firstChild).slideUp('fast');
-            $(this.contentNode().firstChild).open = false;
+            this.contentNode().firstChild.open = false;
+            this.contentNode().firstChild.saved = false;
         } else { 
             // other cells close the output group
             $(this.contentNode().firstChild).nextAll().each(function() { 
@@ -516,7 +517,8 @@ Notebook.Cell.prototype.openGroup = function() {
     if (this.celltype == 'group' && !this.open) {
         if (this.contentNode().firstChild.cellstyle == 'markdown') { 
             $(this.contentNode().firstChild).slideDown('fast');
-            $(this.contentNode().firstChild).open = false;
+            this.contentNode().firstChild.open = false;
+            this.contentNode().firstChild.saved = false;
         } else {
             $(this.contentNode().firstChild).nextAll().each(function() {
                 $(this).slideDown('fast');

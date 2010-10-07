@@ -306,17 +306,23 @@ textarea.spawninput:focus {
 
 .cell .outputhtml p  {
     margin-bottom: 1em;
+    font-size: 1.1em;
+    line-height: 1.2em;
 }
 
 .cell .outputhtml h1 {
-    font-size:1.5em;
+    font-size:1.6em;
     font-weight: bold;
-    margin-bottom: 0.5em;
+    margin-bottom: 1em;
+    margin-top: 1em;
+    
 }
 .cell .outputhtml h2 {
-    font-size:1.2em;
+    font-size:1.3em;
     font-weight: bold;
     margin-bottom: 0.5em;
+    margin-top: 1em;
+    
 }
 .cell .outputhtml h3 {
     font-size:1.1em;
@@ -341,6 +347,19 @@ textarea.spawninput:focus {
     list-style-type: disc;
     margin-left: 2em;
     margin-bottom: 1em;
+}
+
+.cell .outputhtml em {
+    font-style: italic;
+}
+
+.cell .outputhtml strong {
+    font-weight: bold;
+}
+
+.cell .outputhtml blockquote {
+    margin-left: 1.5em;
+    font-style: italic;
 }
 
 

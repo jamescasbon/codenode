@@ -104,10 +104,10 @@ Notebook.Delegator.prototype = {
             target_group = self.targets[target_selector];
         };
         
-        console.log(
-            'Delegator received event in ' + target_selector 
-            + ' delegating to group ' + target_group
-        );
+        // console.log(
+        //     'Delegator received event in ' + target_selector 
+        //     + ' delegating to group ' + target_group
+        // );
 
         if (target_group) {
             var group_element = $(e.target).parents(target_group);
