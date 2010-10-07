@@ -6,7 +6,7 @@ def build_namespace():
         import matplotlib
         matplotlib.use('Agg')
         from codenode.external.mmaplotlib import codenode_plot
-        from pylab import *
+        # from pylab import *
         USERNAMESPACE = locals()
         USERNAMESPACE.update({"show":codenode_plot.show, "introspect":introspect})
     except ImportError:

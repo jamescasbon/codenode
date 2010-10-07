@@ -40,6 +40,12 @@ def run():
     backend_enginetype_1.backend = backend_backendserver_1
     backend_enginetype_1.description = None
     backend_enginetype_1.save()
+    
+    backend_enginetype_2 = EngineType()
+    backend_enginetype_2.name = u'Picloud'
+    backend_enginetype_2.backend = backend_backendserver_1
+    backend_enginetype_2.description = None
+    backend_enginetype_2.save()
 
     print '-' * 80
     print "'admin' user created with password 'admin'."
