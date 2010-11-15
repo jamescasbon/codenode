@@ -46,6 +46,12 @@ def run():
     backend_enginetype_2.backend = backend_backendserver_1
     backend_enginetype_2.description = None
     backend_enginetype_2.save()
+    
+    backend_enginetype_2 = EngineType()
+    backend_enginetype_2.name = u'V8'
+    backend_enginetype_2.backend = backend_backendserver_1
+    backend_enginetype_2.description = None
+    backend_enginetype_2.save()
 
     print '-' * 80
     print "'admin' user created with password 'admin'."
