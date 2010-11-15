@@ -27,6 +27,8 @@ from outputtrap import OutputTrap
 from completer import Completer
 from introspection import introspect
 
+import protocol
+
 class codenodeError(Exception):
     pass
 
@@ -50,37 +52,17 @@ class Interpreter(InteractiveInterpreter):
         self.input_count = 0
         self.interrupted = False
 
-    def _result_dict(self, out, cellstyle='outputtext', in_string='', err='', in_count='', cmd_count=''):
-        return {'input_count':in_count, 
-                    'cmd_count':cmd_count, 
-                    'in':in_string, 
-                    'out':out, 
-                    'cellstyle': cellstyle,
-                    'err':err}
-
-
-    #------------------------------------------------
-    # Main methods to call external
-    # 
-    def cancel_interrupt(self):
-        self.interrupted = False
-        return self._result_dict('ok')
-
     def evaluate(self, input_string):
         """give the input_string to the python interpreter in the
         usernamespace"""
         self.output_trap.set()
         command_count = self._runcommands(input_string)
         stdout, stderr = self.output_trap.get_values()
-        cellstyle, stdout = self._parse_stdout(stdout)
         self.output_trap.reset()
         self.input_count += 1
-        result = {'input_count':self.input_count, 
-                    'cmd_count':command_count, 
-                    'in':input_string, 
-                    'cellstyle': cellstyle,
-                    'out':stdout, 
-                    'err':stderr}
+        result = protocol.result_dict(input_string, stdout, 
+                    in_count=self.input_count, 
+                    cmd_count=command_count, err=stderr)
         return result
 
     def introspect(self, input_string):
@@ -200,27 +182,12 @@ class Interpreter(InteractiveInterpreter):
             return input_string
 
 
-    def _parse_stdout(self, output):
-        """Parse output and return the (cell type, cell output)
-
-        Necessary to extract an image from surrounding text.  The tag 
-        should enclose the data, i.e. 
-
-           __celltype__
-           Data...
-           __celltype__
-        """
-        
-        cell_types = ['outputimage']
-        default_cell_type = 'outputtext'
-
-        for ctype in cell_types: 
-            tag = '__%s__' % ctype
-            if tag in output and output.count(tag) > 1: 
-                # return the last possible chunk
-                return (ctype, output.split(tag)[-2])
-        
-        return default_cell_type, output
-
-
+if __name__ == '__main__':
+    i = Interpreter()   
+    print i.evaluate("print(1+1)")
+    # print i.evaluate("""var plot = ggplot.ggplot(datasets.mtcars);
+    # plot = ggplot.add(plot, ggplot.aes_string({x:'wt', y:'mpg', colour:'cyl'}));
+    # plot = ggplot.add(plot, ggplot.geom_point());
+    # print(plot);
+    # """)
 

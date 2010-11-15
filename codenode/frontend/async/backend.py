@@ -25,6 +25,7 @@ from django.utils import simplejson as json
 from django.conf import settings
 
 from codenode.frontend.notebook import models as notebook_models
+from codenode.engine import protocol
 
 def write_image(image):
     fn = str(uuid.uuid4()) + '.png'
@@ -216,6 +217,8 @@ class EngineSessionAdapter(resource.Resource):
         horrible. not always eval...
         """        
         log.msg('handling data: %s' % str(data))
+        if not data:
+            data = protocol.result_dict('', '', err='ERROR: no engine output')
         data['cellid'] = cellid
         jsobj = json.dumps(data)
         request.write(jsobj)
