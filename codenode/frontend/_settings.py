@@ -93,9 +93,9 @@ APP_PORT = 8000
 #Available types of notebooks: #XXX Clean up and do intelligent detection:
 PLOT_IMAGES = os.path.join(HOME_PATH, 'plot_images')
 
-COMPRESS = True
+# COMPRESS = True
 COMPRESS_VERSION = True
-COMPRESS_AUTO = True
+# COMPRESS_AUTO = True
 COMPRESS_CSS_FILTERS = None #('compress.filters.csstidy_python.CSSTidyFilter', ) 
 
 COMPRESS_CSS = {
