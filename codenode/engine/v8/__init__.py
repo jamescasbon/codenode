@@ -1,6 +1,7 @@
 import os
 from cStringIO import StringIO
 import tempfile
+import operator
 
 import rpy2.robjects.lib.ggplot2 as ggplot2
 from rpy2.robjects.packages import importr
@@ -10,6 +11,7 @@ import PyV8 as v8
 from _PyV8 import JSObject
 
 from codenode.engine import protocol
+import whitelist
 grdevices = importr('grDevices')
 
 
@@ -95,7 +97,7 @@ class EngineContext(v8.JSClass):
         self.ggplot = JSGGplot()
         self.datasets = JSPackage('datasets', expose_all=True)
         self.stats = JSPackage('stats', expose_all=True)
-        self.base = JSPackage('base', expose_all=True)
+        self.base = JSPackage('base', whitelist=whitelist.base_allowed)
         self._buffer = StringIO()
         
     def writeln(self, arg):
@@ -112,11 +114,21 @@ class EngineContext(v8.JSClass):
         buf = self._buffer.getvalue()
         self._buffer = StringIO()
         return buf
-    
-    
-
         
+    def add(self, x, y):
+        return x.ro * y
+        
+    def mul(self, x, y):
+        return x.ro + y
+
+    def sub(self, x, y):
+        return x.ro - y
+        
+    def div(self, x, y):
+        return x.ro / y
     
+    def pow(self, x, y):
+        return x.ro ** y
     
 # cannot create a print method directly
 setattr(EngineContext, 'print', EngineContext.writeln)
